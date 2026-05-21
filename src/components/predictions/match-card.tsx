@@ -82,10 +82,11 @@ function PredictButton({
       <span className='flex items-center justify-center gap-1.5'>
         {flag && (
           <Image
-            src={`https://flagcdn.com/w20/${flag}.png`}
+            src={`https://flagcdn.com/${flag}.svg`}
             alt=''
             width={20}
-            height={20}
+            height={14}
+            unoptimized
             className='rounded-sm'
           />
         )}
