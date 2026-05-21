@@ -77,7 +77,7 @@ export default function LoginPage() {
     try {
       const result = await verifyOtp(pendingEmail, otp)
       saveSession(result)
-      router.push("/dashboard")
+      router.push("/tournaments")
     } catch {
       setError(t.auth.verifyError)
     } finally {

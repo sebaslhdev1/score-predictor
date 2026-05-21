@@ -53,8 +53,14 @@ export interface Translation {
     submitting: string
     submitSuccess: string
     submitSuccessDesc: string
+    predictionRemoved: string
+    predictionBlocked: string
+    today: string
+    closesIn: string
     progressLabel: string
     clearAll: string
+    discard: string
+    resetAll: string
   }
   scoreboard: {
     title: string
@@ -77,6 +83,13 @@ export interface Translation {
     loadError: string
     wipBadge: string
     wipDesc: string
+  }
+  tournaments: {
+    title: string
+    subtitle: string
+    owner: string
+    noTournaments: string
+    loadError: string
   }
   errors: {
     sessionExpiredTitle: string

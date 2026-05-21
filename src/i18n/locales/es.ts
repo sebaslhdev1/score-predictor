@@ -53,8 +53,14 @@ export const es: Translation = {
     submitting: "Enviando…",
     submitSuccess: "¡Predicciones enviadas!",
     submitSuccessDesc: "Tus elecciones han sido registradas. Aún puedes actualizarlas.",
+    predictionRemoved: "Predicción eliminada.",
+    predictionBlocked: "Partido cerrado — predicción no guardada",
+    today: "Hoy",
+    closesIn: "Cierra en",
     progressLabel: "elegidos",
     clearAll: "Limpiar todo",
+    discard: "Descartar",
+    resetAll: "Reiniciar todo",
   },
   scoreboard: {
     title: "Marcador",
@@ -77,6 +83,13 @@ export const es: Translation = {
     loadError: "No se pudieron cargar los participantes. Por favor intenta de nuevo.",
     wipBadge: "Próximamente",
     wipDesc: "Los datos de participantes estarán disponibles cuando el backend esté listo.",
+  },
+  tournaments: {
+    title: "Mis Torneos",
+    subtitle: "Selecciona un torneo para ver predicciones y resultados.",
+    owner: "Propietario",
+    noTournaments: "Aún no formas parte de ningún torneo.",
+    loadError: "No se pudieron cargar los torneos. Por favor intenta de nuevo.",
   },
   errors: {
     sessionExpiredTitle: "Sesión expirada",

@@ -1,20 +1,30 @@
 "use client"
 
 import { useState, useSyncExternalStore } from "react"
-import { LogOut, Trophy, User } from "lucide-react"
+import { BarChart2, LogOut, Trophy, User, Users } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useParams, usePathname, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { LanguageSwitcher } from "@/components/layout/language-switcher"
 import { useT } from "@/i18n/use-t"
+import { cn } from "@/lib/utils"
 import { logout } from "@/services/auth"
 import { getUserName } from "@/lib/session"
 
+const tournamentNavItems = [
+  { segment: "predictions",  labelKey: "predictions"  as const, icon: Trophy    },
+  { segment: "scoreboard",   labelKey: "scoreboard"   as const, icon: BarChart2 },
+  { segment: "participants", labelKey: "participants" as const, icon: Users     },
+]
+
 export function Navbar() {
   const router = useRouter()
+  const pathname = usePathname()
+  const params = useParams()
   const t = useT()
   const [openMenu, setOpenMenu] = useState<"language" | "user" | null>(null)
+  const tournamentId = params?.id as string | undefined
 
   const userName = useSyncExternalStore(
     () => () => {},
@@ -34,9 +44,9 @@ export function Navbar() {
       className="sticky top-0 z-50 shadow-md"
       style={{ backgroundColor: "var(--brand-dark)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}
     >
-      <div className="flex h-16 w-full items-center justify-between px-6">
+      <div className="flex h-16 w-full items-center gap-4 px-6">
         {/* Logo */}
-        <Link href="/predictions" className="flex items-center gap-3">
+        <Link href="/tournaments" className="flex items-center gap-3">
           {logoUrl ? (
             <Image
               src={logoUrl}
@@ -61,8 +71,33 @@ export function Navbar() {
           </div>
         </Link>
 
+        {/* Tournament nav links — desktop only */}
+        {tournamentId && (
+          <nav className="hidden md:flex items-center gap-1 flex-1">
+            {tournamentNavItems.map(({ segment, labelKey, icon: Icon }) => {
+              const href = `/tournaments/${tournamentId}/${segment}`
+              const isActive = pathname === href
+              return (
+                <Link
+                  key={segment}
+                  href={href}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                    isActive
+                      ? "text-white bg-white/10"
+                      : "text-white/50 hover:text-white hover:bg-white/5",
+                  )}
+                >
+                  <Icon className="h-4 w-4" />
+                  {t.nav[labelKey]}
+                </Link>
+              )
+            })}
+          </nav>
+        )}
+
         {/* Right side */}
-        <div className="flex items-center gap-1 -mr-2">
+        <div className="flex items-center gap-1 -mr-2 ml-auto">
           {/* Greeting */}
           {userName && (
             <span className="hidden sm:flex items-center gap-1.5 text-sm pr-1" style={{ color: "rgba(255,255,255,0.7)" }}>

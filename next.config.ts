@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  images: {
+    remotePatterns: [{ hostname: "flagcdn.com" }],
+  },
   async rewrites() {
     return [
       {
