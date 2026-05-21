@@ -38,6 +38,7 @@ export function Navbar() {
   }
 
   const logoUrl = process.env.NEXT_PUBLIC_LOGO_URL
+  const isLanguageOpen = openMenu === "language"
 
   return (
     <header
@@ -108,7 +109,7 @@ export function Navbar() {
 
           <div className="hidden md:block">
             <LanguageSwitcher
-              open={openMenu === "language"}
+              open={isLanguageOpen}
               onOpenChange={(o) => setOpenMenu(o ? "language" : null)}
             />
           </div>
@@ -143,7 +144,7 @@ export function Navbar() {
                   )}
                   <div className="block md:hidden px-4 py-2.5 border-b" style={{ borderColor: "color-mix(in srgb, var(--brand-dark) 8%, transparent)" }}>
                     <LanguageSwitcher
-                      open={openMenu === "language"}
+                      open={isLanguageOpen}
                       onOpenChange={(o) => setOpenMenu(o ? "language" : null)}
                     />
                   </div>
