@@ -62,6 +62,8 @@ export const en: Translation = {
     discard: "Discard",
     resetAll: "Reset all",
     whoWins: "Who wins?",
+    closedMatches: "Closed matches",
+    noClosedMatches: "No closed matches yet.",
   },
   scoreboard: {
     title: "Scoreboard",
@@ -75,6 +77,9 @@ export const en: Translation = {
     wipBadge: "Coming soon",
     wipDesc: "The scoreboard will be live once the first matches are completed.",
     you: "You",
+    refresh: "Refresh",
+    refreshing: "Refreshing…",
+    updatedAt: "Updated at",
   },
   participants: {
     title: "Participants",

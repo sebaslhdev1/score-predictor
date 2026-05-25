@@ -11,7 +11,8 @@ export interface ScoreboardEntry {
 export interface Participant {
   user_id: string
   name: string
-  predictions_made: number
-  total_matches: number
-  joined_at: string // ISO date string
+  points: number
+  right_answers: number
+  total: number
+  is_current_user: boolean
 }

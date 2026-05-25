@@ -3,8 +3,9 @@
 import { useT } from "@/i18n/use-t"
 import { getScoreboard } from "@/services/scoreboard"
 import type { ScoreboardEntry } from "@/types/scoreboard"
-import { Construction, Medal } from "lucide-react"
-import { useEffect, useState } from "react"
+import { Medal, RefreshCw } from "lucide-react"
+import { useParams } from "next/navigation"
+import { useCallback, useEffect, useState } from "react"
 import { cn } from "@/lib/utils"
 
 function RankBadge({ rank }: { rank: number }) {
@@ -33,16 +34,28 @@ function RowSkeleton() {
 
 export default function ScoreboardPage() {
   const t = useT()
+  const { id: tournamentId } = useParams() as { id: string }
   const [entries, setEntries] = useState<ScoreboardEntry[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
 
   useEffect(() => {
-    getScoreboard()
-      .then(setEntries)
+    getScoreboard(tournamentId)
+      .then((data) => { setEntries(data); setLastUpdated(new Date()) })
       .catch(() => setLoadError(true))
       .finally(() => setIsLoading(false))
-  }, [])
+  }, [tournamentId])
+
+  const handleRefresh = useCallback(() => {
+    setIsRefreshing(true)
+    setLoadError(false)
+    getScoreboard(tournamentId)
+      .then((data) => { setEntries(data); setLastUpdated(new Date()) })
+      .catch(() => setLoadError(true))
+      .finally(() => setIsRefreshing(false))
+  }, [tournamentId])
 
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-8 pb-24 md:pb-8">
@@ -51,29 +64,33 @@ export default function ScoreboardPage() {
         className="mb-8 rounded-2xl p-6 text-white"
         style={{ background: "linear-gradient(135deg, #2b2b2d 0%, var(--brand-dark) 60%, #2b2b2d 100%)" }}
       >
-        <div className="mb-1 flex items-center gap-2">
-          <Medal className="h-5 w-5" style={{ color: "var(--brand-orange)" }} />
-          <h1 className="text-xl font-bold">{t.scoreboard.title}</h1>
-        </div>
-        <p className="text-sm" style={{ color: "var(--brand-muted)" }}>
-          {t.scoreboard.subtitle}
-        </p>
-      </div>
-
-      {/* WIP banner */}
-      <div
-        className="mb-6 flex items-start gap-3 rounded-xl border px-4 py-3"
-        style={{
-          borderColor: "color-mix(in srgb, var(--brand-orange) 30%, transparent)",
-          backgroundColor: "color-mix(in srgb, var(--brand-orange) 6%, transparent)",
-        }}
-      >
-        <Construction className="mt-0.5 h-4 w-4 shrink-0" style={{ color: "var(--brand-orange)" }} />
-        <div>
-          <p className="text-sm font-semibold" style={{ color: "var(--brand-dark)" }}>
-            {t.scoreboard.wipBadge}
-          </p>
-          <p className="text-xs text-muted-foreground">{t.scoreboard.wipDesc}</p>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <div className="mb-1 flex items-center gap-2">
+              <Medal className="h-5 w-5" style={{ color: "var(--brand-orange)" }} />
+              <h1 className="text-xl font-bold">{t.scoreboard.title}</h1>
+            </div>
+            <p className="text-sm" style={{ color: "var(--brand-muted)" }}>
+              {t.scoreboard.subtitle}
+            </p>
+          </div>
+          <div className="flex flex-col items-end gap-1.5 shrink-0">
+            <button
+              onClick={handleRefresh}
+              disabled={isRefreshing || isLoading}
+              className="flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+              style={{ border: "1px solid rgba(255,255,255,0.15)" }}
+            >
+              <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
+              {isRefreshing ? t.scoreboard.refreshing : t.scoreboard.refresh}
+            </button>
+            {lastUpdated && !isRefreshing && (
+              <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.4)" }}>
+                {t.scoreboard.updatedAt}{" "}
+                {lastUpdated.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+              </p>
+            )}
+          </div>
         </div>
       </div>
 
@@ -121,7 +138,7 @@ export default function ScoreboardPage() {
               {/* Name */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className={cn("truncate text-sm font-semibold", entry.is_current_user && "text-[var(--brand-orange)]")}>
+                  <p className={cn("truncate text-sm font-semibold", entry.is_current_user && "text-(--brand-orange)")}>
                     {entry.name}
                   </p>
                   {entry.is_current_user && (

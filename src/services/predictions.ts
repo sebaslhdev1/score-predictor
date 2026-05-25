@@ -7,6 +7,13 @@ interface TournamentByIdResponse {
   available_predictions: Match[]
 }
 
+export async function getClosedMatches(tournamentId: string): Promise<Match[]> {
+  const { data } = await api.get<Match[]>("/get_non_available_predictions", {
+    params: { tournament_id: tournamentId },
+  })
+  return data
+}
+
 export async function getTournamentById(
   tournamentId: string,
 ): Promise<{ name: string; matches: Match[] }> {

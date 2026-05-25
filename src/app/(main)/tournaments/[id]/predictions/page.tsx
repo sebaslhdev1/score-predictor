@@ -6,6 +6,7 @@ import { useT } from "@/i18n/use-t"
 import {
   buildSubmitPayload,
   formatMatchDate,
+  getClosedMatches,
   getTournamentById,
   groupMatchesByDate,
   isMatchLocked,
@@ -13,7 +14,7 @@ import {
   scoreToPrediction,
 } from "@/services/predictions"
 import type { Match, PredictionValue } from "@/types/predictions"
-import { ChevronLeft, Loader2, Trophy } from "lucide-react"
+import { ChevronDown, ChevronLeft, Loader2, Lock, Trophy } from "lucide-react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
 import { useCallback, useEffect, useState } from "react"
@@ -59,6 +60,24 @@ export default function PredictionsPage() {
     new Set(),
   )
   const [tournamentName, setTournamentName] = useState<string | null>(null)
+  const [closedOpen, setClosedOpen] = useState(false)
+  const [closedMatches, setClosedMatches] = useState<Match[]>([])
+  const [closedLoading, setClosedLoading] = useState(false)
+  const [closedLoaded, setClosedLoaded] = useState(false)
+
+  function handleToggleClosed() {
+    setClosedOpen((prev) => !prev)
+    if (!closedLoaded) {
+      setClosedLoading(true)
+      getClosedMatches(tournamentId)
+        .then(setClosedMatches)
+        .catch(() => {})
+        .finally(() => {
+          setClosedLoading(false)
+          setClosedLoaded(true)
+        })
+    }
+  }
 
   useEffect(() => {
     getTournamentById(tournamentId)
@@ -114,42 +133,51 @@ export default function PredictionsPage() {
     }
   }
 
-  const handlePredict = useCallback((matchId: string, value: PredictionValue) => {
-    setPredictions((prev) => ({ ...prev, [matchId]: value }))
-    setSubmitted(false)
-    setSubmitError(null)
-  }, [])
+  const handlePredict = useCallback(
+    (matchId: string, value: PredictionValue) => {
+      setPredictions((prev) => ({ ...prev, [matchId]: value }))
+      setSubmitted(false)
+      setSubmitError(null)
+    },
+    [],
+  )
 
-  const notifyBlocked = useCallback((blockedIds: string[]) => {
-    blockedIds.forEach((id) => {
-      const match = matches.find((m) => m.match_id === id)
-      const label = match ? `${match.local_team} vs ${match.away_team}` : id
-      toast.error(`${label} — ${t.predictions.predictionBlocked}`)
-    })
-  }, [matches, t.predictions.predictionBlocked])
+  const notifyBlocked = useCallback(
+    (blockedIds: string[]) => {
+      blockedIds.forEach((id) => {
+        const match = matches.find((m) => m.match_id === id)
+        const label = match ? `${match.local_team} vs ${match.away_team}` : id
+        toast.error(`${label} — ${t.predictions.predictionBlocked}`)
+      })
+    },
+    [matches, t.predictions.predictionBlocked],
+  )
 
-  const handleClearMatch = useCallback(async (matchId: string) => {
-    setClearingMatchId(matchId)
-    setPredictions((prev) => ({ ...prev, [matchId]: null }))
-    try {
-      const { blocked } = await recordPredictions([
-        { match_id: matchId, score: null },
-      ])
-      if (blocked.length === 0) {
-        toast.success(t.predictions.predictionRemoved)
-        setServerPredictions((prev) => ({ ...prev, [matchId]: null }))
-        setPersistedMatchIds((prev) => {
-          const next = new Set(prev)
-          next.delete(matchId)
-          return next
-        })
-      } else {
-        notifyBlocked(blocked)
+  const handleClearMatch = useCallback(
+    async (matchId: string) => {
+      setClearingMatchId(matchId)
+      setPredictions((prev) => ({ ...prev, [matchId]: null }))
+      try {
+        const { blocked } = await recordPredictions([
+          { match_id: matchId, score: null },
+        ])
+        if (blocked.length === 0) {
+          toast.success(t.predictions.predictionRemoved)
+          setServerPredictions((prev) => ({ ...prev, [matchId]: null }))
+          setPersistedMatchIds((prev) => {
+            const next = new Set(prev)
+            next.delete(matchId)
+            return next
+          })
+        } else {
+          notifyBlocked(blocked)
+        }
+      } finally {
+        setClearingMatchId(null)
       }
-    } finally {
-      setClearingMatchId(null)
-    }
-  }, [t, notifyBlocked])
+    },
+    [t, notifyBlocked],
+  )
 
   async function handleSubmit() {
     setIsSubmitting(true)
@@ -233,7 +261,10 @@ export default function PredictionsPage() {
               <div>
                 <h1 className='text-lg font-bold'>{t.predictions.title}</h1>
                 {tournamentName && (
-                  <p className='text-xs font-medium' style={{ color: "var(--brand-muted)" }}>
+                  <p
+                    className='text-xs font-medium'
+                    style={{ color: "var(--brand-muted)" }}
+                  >
                     {tournamentName}
                   </p>
                 )}
@@ -299,6 +330,80 @@ export default function PredictionsPage() {
             </div>
           )}
         </div>
+
+        {/* Closed matches */}
+        {!isLoading && !loadError && (
+          <div className='mb-6'>
+            <button
+              onClick={handleToggleClosed}
+              className='flex w-full items-center justify-between rounded-xl px-4 py-3 text-sm font-semibold transition-colors hover:opacity-80'
+              style={{
+                backgroundColor:
+                  "color-mix(in srgb, var(--brand-dark) 8%, transparent)",
+                border:
+                  "1px solid color-mix(in srgb, var(--brand-dark) 12%, transparent)",
+                color: "var(--brand-dark)",
+              }}
+            >
+              <div className='flex items-center gap-2'>
+                <Lock className='h-4 w-4' />
+                {t.predictions.closedMatches}
+                {closedLoaded && closedMatches.length > 0 && (
+                  <span
+                    className='rounded-full px-2 py-0.5 text-[10px] font-bold text-white'
+                    style={{ backgroundColor: "var(--brand-dark)" }}
+                  >
+                    {closedMatches.length}
+                  </span>
+                )}
+              </div>
+              <ChevronDown
+                className={`h-4 w-4 transition-transform duration-300 ${closedOpen ? "rotate-180" : ""}`}
+              />
+            </button>
+
+            <div
+              className={`grid transition-all duration-300 ease-in-out ${closedOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}
+            >
+              <div className='overflow-hidden'>
+                <div className='space-y-3 pt-3'>
+                  {closedLoading && (
+                    <>
+                      <MatchSkeleton />
+                      <MatchSkeleton />
+                      <MatchSkeleton />
+                    </>
+                  )}
+                  {!closedLoading &&
+                    closedLoaded &&
+                    closedMatches.length === 0 && (
+                      <p className='py-6 text-center text-sm text-muted-foreground'>
+                        {t.predictions.noClosedMatches}
+                      </p>
+                    )}
+                  {!closedLoading &&
+                    closedMatches.map((match) => {
+                      const pick = scoreToPrediction(match)
+                      return (
+                        <MatchCard
+                          key={match.match_id}
+                          match={match}
+                          prediction={pick}
+                          serverPrediction={pick}
+                          tieLabel={t.predictions.tie}
+                          locked
+                          isPersisted={match.score !== null}
+                          isClearing={false}
+                          onPredict={() => {}}
+                          onClear={() => {}}
+                        />
+                      )
+                    })}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Error banner */}
         {submitError && (
@@ -401,7 +506,9 @@ export default function PredictionsPage() {
                 style={{ backgroundColor: "var(--brand-orange)" }}
               >
                 {isSubmitting && <Loader2 className='h-4 w-4 animate-spin' />}
-                {isSubmitting ? t.predictions.submitting : `${t.predictions.submit} (${unsubmittedCount})`}
+                {isSubmitting
+                  ? t.predictions.submitting
+                  : `${t.predictions.submit} (${unsubmittedCount})`}
               </button>
             </div>
           </div>

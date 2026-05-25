@@ -8,19 +8,10 @@ import {
   isMatchToday,
 } from "@/services/predictions"
 import type { Match, PredictionValue } from "@/types/predictions"
-import {
-  CheckCircle2,
-  Clock,
-  Loader2,
-  Lock,
-  MapPin,
-  Timer,
-  Trash2,
-} from "lucide-react"
-import Image from "next/image"
-import { memo, useCallback, useEffect, useState } from "react"
-
-const FIVE_HOURS_MS = 5 * 60 * 60 * 1000
+import { CheckCircle2, Clock, Loader2, Lock, MapPin, Trash2 } from "lucide-react"
+import { memo, useCallback, useState } from "react"
+import { Countdown } from "./countdown"
+import { PredictButton } from "./predict-button"
 
 interface MatchCardProps {
   match: Match
@@ -32,119 +23,6 @@ interface MatchCardProps {
   isClearing?: boolean
   onPredict: (matchId: string, value: PredictionValue) => void
   onClear: (matchId: string) => void
-}
-
-interface PredictButtonProps {
-  label: string
-  flag?: string | null
-  value: NonNullable<PredictionValue>
-  selected: boolean
-  locked: boolean
-  onClick: () => void
-}
-
-function PredictButton({
-  label,
-  flag,
-  value,
-  selected,
-  locked,
-  onClick,
-}: PredictButtonProps) {
-  const isTie = value === "tie"
-  return (
-    <button
-      onClick={onClick}
-      disabled={locked}
-      className={cn(
-        "flex-1 rounded-lg px-2 py-2.5 text-sm font-medium",
-        "border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1",
-        locked
-          ? "cursor-not-allowed opacity-60"
-          : selected
-            ? "border-transparent text-white shadow-sm"
-            : "border-border bg-white text-foreground hover:bg-muted/60",
-        !locked && selected
-          ? "border-transparent text-white shadow-sm"
-          : !locked
-            ? "border-border bg-white text-foreground"
-            : "",
-      )}
-      style={
-        selected
-          ? {
-              backgroundColor: isTie
-                ? "var(--brand-dark)"
-                : "var(--brand-orange)",
-            }
-          : undefined
-      }
-    >
-      <span className='flex items-center justify-center gap-1.5'>
-        {flag && (
-          <Image
-            src={`https://flagcdn.com/${flag}.svg`}
-            alt=''
-            width={20}
-            height={14}
-            unoptimized
-            className='rounded-sm'
-          />
-        )}
-        {label}
-      </span>
-    </button>
-  )
-}
-
-function Countdown({
-  dueDateStr,
-  onExpire,
-}: {
-  dueDateStr: string
-  onExpire: () => void
-}) {
-  const t = useT()
-  const dueMs = new Date(dueDateStr + "-05:00").getTime()
-  const [remaining, setRemaining] = useState(() =>
-    Math.max(0, dueMs - Date.now()),
-  )
-
-  useEffect(() => {
-    if (dueMs <= Date.now()) return
-    const id = setInterval(() => {
-      const r = Math.max(0, dueMs - Date.now())
-      setRemaining(r)
-      if (r === 0) onExpire()
-    }, 1000)
-    return () => clearInterval(id)
-  }, [dueMs, onExpire])
-
-  if (remaining <= 0 || remaining > FIVE_HOURS_MS) return null
-
-  const totalSeconds = Math.floor(remaining / 1000)
-  const hours = Math.floor(totalSeconds / 3600)
-  const minutes = Math.floor((totalSeconds % 3600) / 60)
-  const seconds = totalSeconds % 60
-
-  const timeStr =
-    hours > 0
-      ? `${hours}h ${minutes}m`
-      : minutes > 0
-        ? `${minutes}m ${seconds}s`
-        : `${seconds}s`
-
-  return (
-    <div
-      className='flex items-center gap-1 text-xs font-semibold'
-      style={{ color: "var(--brand-orange)" }}
-    >
-      <Timer className='h-3 w-3 shrink-0' />
-      <span>
-        {t.predictions.closesIn} {timeStr}
-      </span>
-    </div>
-  )
 }
 
 export const MatchCard = memo(function MatchCard({
@@ -216,6 +94,13 @@ export const MatchCard = memo(function MatchCard({
           : undefined
       }
     >
+      {/* Countdown — mobile only, first row */}
+      {!effectiveLocked && (
+        <div className='mb-1 sm:hidden'>
+          <Countdown dueDateStr={match.due_date} onExpire={handleExpire} />
+        </div>
+      )}
+
       {/* Header row: location + time + today badge | status icons */}
       <div className='mb-1 flex items-start justify-between gap-2'>
         <div className='flex items-center gap-2 min-w-0 text-xs text-muted-foreground'>
@@ -268,13 +153,6 @@ export const MatchCard = memo(function MatchCard({
           </div>
         </div>
       </div>
-
-      {/* Countdown — mobile only, second row */}
-      {!effectiveLocked && (
-        <div className='mb-2 sm:hidden'>
-          <Countdown dueDateStr={match.due_date} onExpire={handleExpire} />
-        </div>
-      )}
 
       {/* Teams */}
       <p className='mb-3 font-semibold text-base leading-snug'>

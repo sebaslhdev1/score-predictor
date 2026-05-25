@@ -62,6 +62,8 @@ export interface Translation {
     discard: string
     resetAll: string
     whoWins: string
+    closedMatches: string
+    noClosedMatches: string
   }
   scoreboard: {
     title: string
@@ -75,6 +77,9 @@ export interface Translation {
     wipBadge: string
     wipDesc: string
     you: string
+    refresh: string
+    refreshing: string
+    updatedAt: string
   }
   participants: {
     title: string
