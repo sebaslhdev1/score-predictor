@@ -1,4 +1,4 @@
-export type PredictionValue = "local" | "away" | "tie" | null
+export type PredictionValue = "local" | "away" | "tie" | "tie-local" | "tie-away" | null
 
 export interface Match {
   match_id: string

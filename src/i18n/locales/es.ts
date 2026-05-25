@@ -61,6 +61,7 @@ export const es: Translation = {
     clearAll: "Limpiar todo",
     discard: "Descartar",
     resetAll: "Reiniciar todo",
+    whoWins: "¿Quién gana?",
   },
   scoreboard: {
     title: "Marcador",

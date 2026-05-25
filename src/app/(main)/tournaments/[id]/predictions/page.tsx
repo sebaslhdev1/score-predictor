@@ -6,13 +6,12 @@ import { useT } from "@/i18n/use-t"
 import {
   buildSubmitPayload,
   formatMatchDate,
-  getAvailablePredictions,
+  getTournamentById,
   groupMatchesByDate,
   isMatchLocked,
   recordPredictions,
   scoreToPrediction,
 } from "@/services/predictions"
-import { getTournaments } from "@/services/tournament"
 import type { Match, PredictionValue } from "@/types/predictions"
 import { ChevronLeft, Loader2, Trophy } from "lucide-react"
 import Link from "next/link"
@@ -62,15 +61,9 @@ export default function PredictionsPage() {
   const [tournamentName, setTournamentName] = useState<string | null>(null)
 
   useEffect(() => {
-    getTournaments()
-      .then((list) => {
-        const found = list.find((t) => t.tournament_id === tournamentId)
-        if (found) setTournamentName(found.tournament_name)
-      })
-      .catch(() => {})
-
-    getAvailablePredictions(tournamentId)
-      .then((data) => {
+    getTournamentById(tournamentId)
+      .then(({ name, matches: data }) => {
+        setTournamentName(name)
         setMatches(data)
         const initial: Record<string, PredictionValue> = {}
         data.forEach((m) => {
@@ -166,10 +159,14 @@ export default function PredictionsPage() {
         buildSubmitPayload(matches, predictions),
       )
       setSubmitted(true)
-      const savedIds = Object.entries(predictions)
-        .filter(([, v]) => v !== null)
-        .map(([id]) => id)
-        .filter((id) => !blocked.includes(id))
+      const savedIds = matches
+        .filter((m) => {
+          const v = predictions[m.match_id] ?? null
+          if (v === null) return false
+          if (m.match_type === "Knockout" && v === "tie") return false
+          return !blocked.includes(m.match_id)
+        })
+        .map((m) => m.match_id)
       setServerPredictions((prev) => {
         const next = { ...prev }
         savedIds.forEach((id) => {
@@ -188,12 +185,20 @@ export default function PredictionsPage() {
   }
 
   const totalMatches = matches.length
-  const predictedCount = Object.values(predictions).filter(Boolean).length
-  const unsubmittedCount = matches.filter(
-    (m) =>
-      (predictions[m.match_id] ?? null) !==
-      (serverPredictions[m.match_id] ?? null),
-  ).length
+  const predictedCount = matches.filter((m) => {
+    const p = predictions[m.match_id] ?? null
+    if (p === null) return false
+    if (m.match_type === "Knockout" && p === "tie") return false
+    return true
+  }).length
+  const submittable = (m: Match, p: PredictionValue) =>
+    m.match_type === "Knockout" && p === "tie" ? null : p
+
+  const unsubmittedCount = matches.filter((m) => {
+    const local = submittable(m, predictions[m.match_id] ?? null)
+    const server = submittable(m, serverPredictions[m.match_id] ?? null)
+    return local !== server
+  }).length
   const progressPct =
     totalMatches > 0 ? (predictedCount / totalMatches) * 100 : 0
   const matchesByDate = groupMatchesByDate(matches)
@@ -351,6 +356,7 @@ export default function PredictionsPage() {
                     key={match.match_id}
                     match={match}
                     prediction={predictions[match.match_id] ?? null}
+                    serverPrediction={serverPredictions[match.match_id] ?? null}
                     tieLabel={t.predictions.tie}
                     locked={isMatchLocked(match.due_date)}
                     isPersisted={persistedMatchIds.has(match.match_id)}

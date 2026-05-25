@@ -1,11 +1,19 @@
 import { api } from "@/lib/api"
 import type { Match, MatchesByDate, MatchSubmission, PredictionResponse, PredictionValue } from "@/types/predictions"
 
-export async function getAvailablePredictions(tournamentId: string): Promise<Match[]> {
-  const { data } = await api.get<Match[]>("/get_available_predictions", {
+interface TournamentByIdResponse {
+  id: string
+  name: string
+  available_predictions: Match[]
+}
+
+export async function getTournamentById(
+  tournamentId: string,
+): Promise<{ name: string; matches: Match[] }> {
+  const { data } = await api.get<TournamentByIdResponse>("/get_tournament_by_id", {
     params: { tournament_id: tournamentId },
   })
-  return data
+  return { name: data.name, matches: data.available_predictions }
 }
 
 export async function recordPredictions(submissions: MatchSubmission[]): Promise<PredictionResponse> {
@@ -15,9 +23,15 @@ export async function recordPredictions(submissions: MatchSubmission[]): Promise
 
 export function scoreToPrediction(match: Match): PredictionValue {
   if (!match.score) return null
-  if (match.score.toLowerCase() === "tie") return "tie"
-  if (match.score.toLowerCase() === match.local_team.toLowerCase()) return "local"
-  if (match.score.toLowerCase() === match.away_team.toLowerCase()) return "away"
+  const lower = match.score.toLowerCase()
+  if (lower === "tie") return "tie"
+  if (lower.startsWith("tie-")) {
+    const winner = lower.slice(4)
+    if (winner === match.local_team.toLowerCase()) return "tie-local"
+    if (winner === match.away_team.toLowerCase()) return "tie-away"
+  }
+  if (lower === match.local_team.toLowerCase()) return "local"
+  if (lower === match.away_team.toLowerCase()) return "away"
   return null
 }
 
@@ -55,7 +69,9 @@ export function buildSubmitPayload(
     const score =
       pick === "local" ? m.local_team
       : pick === "away" ? m.away_team
-      : pick === "tie" ? "tie"
+      : pick === "tie" ? (m.match_type === "Knockout" ? null : "tie")
+      : pick === "tie-local" ? `tie-${m.local_team}`
+      : pick === "tie-away" ? `tie-${m.away_team}`
       : null
     return { match_id: m.match_id, score }
   })

@@ -61,6 +61,7 @@ export interface Translation {
     clearAll: string
     discard: string
     resetAll: string
+    whoWins: string
   }
   scoreboard: {
     title: string

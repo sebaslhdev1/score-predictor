@@ -25,6 +25,7 @@ const FIVE_HOURS_MS = 5 * 60 * 60 * 1000
 interface MatchCardProps {
   match: Match
   prediction: PredictionValue
+  serverPrediction: PredictionValue
   tieLabel: string
   locked?: boolean
   isPersisted?: boolean
@@ -149,6 +150,7 @@ function Countdown({
 export const MatchCard = memo(function MatchCard({
   match,
   prediction,
+  serverPrediction,
   tieLabel,
   locked = false,
   isPersisted = false,
@@ -164,15 +166,34 @@ export const MatchCard = memo(function MatchCard({
 
   const effectiveLocked = locked || autoLocked
 
+  const effectivePrediction = effectiveLocked
+    ? isPersisted
+      ? serverPrediction
+      : null
+    : prediction
+  const isPredicted =
+    effectivePrediction !== null &&
+    !(match.match_type === "Knockout" && effectivePrediction === "tie")
+  const today = isMatchToday(match.due_date)
+
+  const isTieFamily =
+    effectivePrediction === "tie" ||
+    effectivePrediction === "tie-local" ||
+    effectivePrediction === "tie-away"
+
   function handlePredict(value: NonNullable<PredictionValue>) {
     if (effectiveLocked) return
-    onPredict(match.match_id, effectivePrediction === value ? null : value)
+    if (value === "tie") {
+      onPredict(match.match_id, isTieFamily ? null : "tie")
+    } else {
+      onPredict(match.match_id, effectivePrediction === value ? null : value)
+    }
   }
 
-  const effectivePrediction =
-    effectiveLocked && !isPersisted ? null : prediction
-  const isPredicted = effectivePrediction !== null
-  const today = isMatchToday(match.due_date)
+  function handleKnockoutWinner(value: "tie-local" | "tie-away") {
+    if (effectiveLocked) return
+    onPredict(match.match_id, effectivePrediction === value ? "tie" : value)
+  }
 
   return (
     <div
@@ -195,8 +216,8 @@ export const MatchCard = memo(function MatchCard({
           : undefined
       }
     >
-      {/* Header row: location + time + today badge | countdown + status icons */}
-      <div className='mb-2 flex items-start justify-between gap-2'>
+      {/* Header row: location + time + today badge | status icons */}
+      <div className='mb-1 flex items-start justify-between gap-2'>
         <div className='flex items-center gap-2 min-w-0 text-xs text-muted-foreground'>
           <div className='flex items-center gap-1 min-w-0'>
             <MapPin className='h-3 w-3 shrink-0' />
@@ -218,7 +239,9 @@ export const MatchCard = memo(function MatchCard({
 
         <div className='flex flex-col items-end gap-1 shrink-0'>
           {!effectiveLocked && (
-            <Countdown dueDateStr={match.due_date} onExpire={handleExpire} />
+            <div className='hidden sm:flex'>
+              <Countdown dueDateStr={match.due_date} onExpire={handleExpire} />
+            </div>
           )}
           <div className='flex items-center gap-1.5'>
             {isPersisted && !effectiveLocked && (
@@ -246,6 +269,13 @@ export const MatchCard = memo(function MatchCard({
         </div>
       </div>
 
+      {/* Countdown — mobile only, second row */}
+      {!effectiveLocked && (
+        <div className='mb-2 sm:hidden'>
+          <Countdown dueDateStr={match.due_date} onExpire={handleExpire} />
+        </div>
+      )}
+
       {/* Teams */}
       <p className='mb-3 font-semibold text-base leading-snug'>
         {match.local_team}
@@ -268,7 +298,7 @@ export const MatchCard = memo(function MatchCard({
         <PredictButton
           label={tieLabel}
           value='tie'
-          selected={effectivePrediction === "tie"}
+          selected={isTieFamily}
           locked={effectiveLocked}
           onClick={() => handlePredict("tie")}
         />
@@ -281,6 +311,45 @@ export const MatchCard = memo(function MatchCard({
           onClick={() => handlePredict("away")}
         />
       </div>
+
+      {/* Knockout tiebreaker — who wins after extra time? */}
+      {match.match_type === "Knockout" && isTieFamily && (
+        <div className='mt-2 space-y-1.5'>
+          <p
+            className={cn(
+              "text-center text-lg font-semibold",
+              effectivePrediction === "tie"
+                ? "animate-pulse"
+                : "text-muted-foreground font-normal",
+            )}
+            style={
+              effectivePrediction === "tie"
+                ? { color: "var(--brand-orange)" }
+                : undefined
+            }
+          >
+            {t.predictions.whoWins}
+          </p>
+          <div className='flex gap-2'>
+            <PredictButton
+              label={match.local_team}
+              flag={match.local_team_icon_code}
+              value='local'
+              selected={effectivePrediction === "tie-local"}
+              locked={effectiveLocked}
+              onClick={() => handleKnockoutWinner("tie-local")}
+            />
+            <PredictButton
+              label={match.away_team}
+              flag={match.away_team_icon_code}
+              value='away'
+              selected={effectivePrediction === "tie-away"}
+              locked={effectiveLocked}
+              onClick={() => handleKnockoutWinner("tie-away")}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 })
