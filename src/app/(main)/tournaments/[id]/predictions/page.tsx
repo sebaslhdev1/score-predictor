@@ -203,6 +203,16 @@ export default function PredictionsPage() {
         return next
       })
       setPersistedMatchIds((prev) => new Set([...prev, ...savedIds]))
+      // Revert incomplete KO ties back to their server-saved state
+      setPredictions((prev) => {
+        const next = { ...prev }
+        matches.forEach((m) => {
+          if (m.match_type === "Knockout" && (next[m.match_id] ?? null) === "tie") {
+            next[m.match_id] = serverPredictions[m.match_id] ?? null
+          }
+        })
+        return next
+      })
       toast.success(t.predictions.submitSuccess)
       if (blocked.length > 0) notifyBlocked(blocked)
     } catch {
@@ -223,7 +233,9 @@ export default function PredictionsPage() {
     m.match_type === "Knockout" && p === "tie" ? null : p
 
   const unsubmittedCount = matches.filter((m) => {
-    const local = submittable(m, predictions[m.match_id] ?? null)
+    const rawLocal = predictions[m.match_id] ?? null
+    if (m.match_type === "Knockout" && rawLocal === "tie") return false
+    const local = submittable(m, rawLocal)
     const server = submittable(m, serverPredictions[m.match_id] ?? null)
     return local !== server
   }).length

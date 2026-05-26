@@ -1,13 +1,15 @@
 "use client"
 
 import { useState, useSyncExternalStore } from "react"
-import { BarChart2, LogOut, Trophy, User, Users } from "lucide-react"
+import { BarChart2, Globe, LogOut, Trophy, User, Users } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { useParams, usePathname, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { LanguageSwitcher } from "@/components/layout/language-switcher"
+import { useLocale } from "@/i18n/provider"
 import { useT } from "@/i18n/use-t"
+import type { Locale } from "@/i18n/types"
 import { cn } from "@/lib/utils"
 import { logout } from "@/services/auth"
 import { getUserName } from "@/lib/session"
@@ -23,6 +25,7 @@ export function Navbar() {
   const pathname = usePathname()
   const params = useParams()
   const t = useT()
+  const { locale, setLocale } = useLocale()
   const [openMenu, setOpenMenu] = useState<"language" | "user" | null>(null)
   const tournamentId = params?.id as string | undefined
 
@@ -142,11 +145,26 @@ export function Navbar() {
                       </p>
                     </div>
                   )}
-                  <div className="block md:hidden px-4 py-2.5 border-b" style={{ borderColor: "color-mix(in srgb, var(--brand-dark) 8%, transparent)" }}>
-                    <LanguageSwitcher
-                      open={isLanguageOpen}
-                      onOpenChange={(o) => setOpenMenu(o ? "language" : null)}
-                    />
+                  <div className="block md:hidden border-b" style={{ borderColor: "color-mix(in srgb, var(--brand-dark) 8%, transparent)" }}>
+                    <div className="flex items-center gap-1.5 px-4 pt-2.5 pb-1 text-xs text-muted-foreground">
+                      <Globe className="h-3.5 w-3.5" />
+                      {t.nav.language}
+                    </div>
+                    <div className="flex gap-2 px-4 pb-2.5">
+                      {(["en", "es"] as Locale[]).map((l) => (
+                        <button
+                          key={l}
+                          onClick={() => { setLocale(l); setOpenMenu(null) }}
+                          className="flex-1 rounded-lg py-1.5 text-sm transition-colors hover:bg-black/5"
+                          style={{
+                            fontWeight: locale === l ? 700 : 400,
+                            color: locale === l ? "var(--brand-orange)" : "var(--brand-dark)",
+                          }}
+                        >
+                          {l === "en" ? "English" : "Español"}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                   <button
                     onClick={handleLogout}
