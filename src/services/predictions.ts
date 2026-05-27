@@ -1,5 +1,12 @@
 import { api } from "@/lib/api"
-import type { Match, MatchesByDate, MatchSubmission, PredictionResponse, PredictionValue } from "@/types/predictions"
+import type {
+  Match,
+  MatchesByDate,
+  MatchSubmission,
+  PredictionResponse,
+  PredictionValue,
+} from "@/types/predictions"
+import type { Question, QuestionPrediction } from "@/types/questions"
 
 interface TournamentByIdResponse {
   id: string
@@ -17,14 +24,30 @@ export async function getClosedMatches(tournamentId: string): Promise<Match[]> {
 export async function getTournamentById(
   tournamentId: string,
 ): Promise<{ name: string; matches: Match[] }> {
-  const { data } = await api.get<TournamentByIdResponse>("/get_tournament_by_id", {
-    params: { tournament_id: tournamentId },
-  })
+  const { data } = await api.get<TournamentByIdResponse>(
+    "/get_tournament_by_id",
+    {
+      params: { tournament_id: tournamentId },
+    },
+  )
   return { name: data.name, matches: data.available_predictions }
 }
 
-export async function recordPredictions(submissions: MatchSubmission[]): Promise<PredictionResponse> {
-  const { data } = await api.post<PredictionResponse>("/record_predictions", submissions)
+export async function getQuestions(tournamentId: string): Promise<Question[]> {
+  const { data } = await api.get<Question[]>("/get_questions", {
+    params: { tournament_id: tournamentId },
+  })
+  return data
+}
+
+export async function recordPredictions(
+  matchPredictions: MatchSubmission[],
+  questionPredictions: QuestionPrediction[] = [],
+): Promise<PredictionResponse> {
+  const { data } = await api.post<PredictionResponse>("/record_predictions", {
+    match_predictions: matchPredictions,
+    question_predictions: questionPredictions,
+  })
   return data
 }
 
@@ -74,12 +97,19 @@ export function buildSubmitPayload(
   return matches.map((m) => {
     const pick = predictions[m.match_id] ?? null
     const score =
-      pick === "local" ? m.local_team
-      : pick === "away" ? m.away_team
-      : pick === "tie" ? (m.match_type === "Knockout" ? null : "tie")
-      : pick === "tie-local" ? `tie-${m.local_team}`
-      : pick === "tie-away" ? `tie-${m.away_team}`
-      : null
+      pick === "local"
+        ? m.local_team
+        : pick === "away"
+          ? m.away_team
+          : pick === "tie"
+            ? m.match_type === "Knockout"
+              ? null
+              : "tie"
+            : pick === "tie-local"
+              ? `tie-${m.local_team}`
+              : pick === "tie-away"
+                ? `tie-${m.away_team}`
+                : null
     return { match_id: m.match_id, score }
   })
 }

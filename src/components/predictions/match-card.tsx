@@ -8,7 +8,17 @@ import {
   isMatchToday,
 } from "@/services/predictions"
 import type { Match, PredictionValue } from "@/types/predictions"
-import { CheckCircle2, Clock, Loader2, Lock, MapPin, Trash2 } from "lucide-react"
+import {
+  Check,
+  CheckCircle2,
+  Clock,
+  Loader2,
+  Lock,
+  MapPin,
+  Trash2,
+  X,
+} from "lucide-react"
+import Image from "next/image"
 import { memo, useCallback, useState } from "react"
 import { Countdown } from "./countdown"
 import { PredictButton } from "./predict-button"
@@ -59,6 +69,43 @@ export const MatchCard = memo(function MatchCard({
     effectivePrediction === "tie-local" ||
     effectivePrediction === "tie-away"
 
+  const hasWinner = match.winner != null
+  const normalizedWinner = match.winner?.toLowerCase()
+  const normalizedScore = match.score?.toLowerCase()
+  // score like "tie-colombia" means the match went to extra time before a team won
+  const isTieScore = normalizedScore?.startsWith("tie-") ?? false
+  const winnerKey: PredictionValue =
+    normalizedWinner === "tie"
+      ? "tie"
+      : normalizedWinner === match.local_team.toLowerCase()
+        ? isTieScore ? "tie-local" : "local"
+        : normalizedWinner === match.away_team.toLowerCase()
+          ? isTieScore ? "tie-away" : "away"
+          : null
+  const hasPrediction = effectivePrediction != null
+  const isCorrect =
+    hasWinner && hasPrediction && effectivePrediction === winnerKey
+  const isPartiallyCorrect =
+    !isCorrect &&
+    hasWinner &&
+    hasPrediction &&
+    isTieScore &&
+    ((winnerKey === "tie-local" && effectivePrediction === "local") ||
+      (winnerKey === "tie-away" && effectivePrediction === "away"))
+  const winnerIconCode = hasWinner
+    ? winnerKey === "local" || winnerKey === "tie-local"
+      ? match.local_team_icon_code
+      : winnerKey === "away" || winnerKey === "tie-away"
+        ? match.away_team_icon_code
+        : null
+    : null
+  const winnerDisplay =
+    normalizedWinner === "tie"
+      ? tieLabel
+      : isTieScore
+        ? `${tieLabel} – ${match.winner}`
+        : (match.winner ?? "")
+
   function handlePredict(value: NonNullable<PredictionValue>) {
     if (effectiveLocked) return
     if (value === "tie") {
@@ -76,22 +123,37 @@ export const MatchCard = memo(function MatchCard({
   return (
     <div
       className={cn(
-        "rounded-xl border bg-card p-4 shadow-sm transition-[border-color,box-shadow,opacity] duration-200",
-        effectiveLocked
-          ? "border-border opacity-75"
-          : isPredicted
-            ? "border-transparent shadow-md"
-            : "border-border hover:border-muted-foreground/30",
+        "rounded-xl bg-card p-4 shadow-sm transition-[border-color,box-shadow,opacity] duration-200",
+        hasWinner
+          ? "border-2"
+          : effectiveLocked
+            ? "border border-border opacity-75"
+            : isPredicted
+              ? "border border-transparent shadow-md"
+              : "border border-border hover:border-muted-foreground/30",
       )}
       style={
-        !effectiveLocked && isPredicted
+        hasWinner
           ? {
-              borderColor:
-                "color-mix(in srgb, var(--brand-orange) 35%, transparent)",
-              boxShadow:
-                "0 2px 12px color-mix(in srgb, var(--brand-orange) 12%, transparent)",
+              borderColor: isCorrect
+                ? "color-mix(in srgb, var(--brand-green) 55%, transparent)"
+                : isPartiallyCorrect || !hasPrediction
+                  ? "color-mix(in srgb, var(--brand-dark) 20%, transparent)"
+                  : "color-mix(in srgb, var(--destructive) 45%, transparent)",
+              boxShadow: isCorrect
+                ? "0 2px 12px color-mix(in srgb, var(--brand-green) 12%, transparent)"
+                : isPartiallyCorrect || !hasPrediction
+                  ? undefined
+                  : "0 2px 8px color-mix(in srgb, var(--destructive) 10%, transparent)",
             }
-          : undefined
+          : !effectiveLocked && isPredicted
+            ? {
+                borderColor:
+                  "color-mix(in srgb, var(--brand-orange) 35%, transparent)",
+                boxShadow:
+                  "0 2px 12px color-mix(in srgb, var(--brand-orange) 12%, transparent)",
+              }
+            : undefined
       }
     >
       {/* Countdown — mobile only, first row */}
@@ -142,14 +204,57 @@ export const MatchCard = memo(function MatchCard({
                 )}
               </button>
             )}
-            {effectiveLocked ? (
+            {hasWinner ? (
+              <div
+                className='flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold'
+                style={{
+                  backgroundColor: isCorrect
+                    ? "color-mix(in srgb, var(--brand-green) 12%, transparent)"
+                    : isPartiallyCorrect || !hasPrediction
+                      ? "color-mix(in srgb, var(--brand-dark) 8%, transparent)"
+                      : "color-mix(in srgb, var(--destructive) 10%, transparent)",
+                  color: isCorrect
+                    ? "var(--brand-green)"
+                    : isPartiallyCorrect || !hasPrediction
+                      ? "var(--muted-foreground)"
+                      : "var(--destructive)",
+                }}
+              >
+                {winnerIconCode && (
+                  <Image
+                    src={`https://flagcdn.com/w40/${winnerIconCode}.png`}
+                    alt={winnerDisplay}
+                    width={18}
+                    height={13}
+                    className='rounded-sm object-cover'
+                    unoptimized
+                  />
+                )}
+                <span>{winnerDisplay}</span>
+                {hasPrediction && !isPartiallyCorrect &&
+                  (isCorrect ? (
+                    <Check className='h-3 w-3' />
+                  ) : (
+                    <X className='h-3 w-3' />
+                  ))}
+              </div>
+            ) : null}
+            {hasWinner && match.points_earned != null && match.points_earned > 0 && (
+              <span
+                className='text-xs font-bold'
+                style={{ color: "var(--brand-green)" }}
+              >
+                +{match.points_earned}
+              </span>
+            )}
+            {!hasWinner && (effectiveLocked ? (
               <Lock className='h-3.5 w-3.5 text-muted-foreground' />
             ) : isPredicted ? (
               <CheckCircle2
                 className='h-4 w-4'
                 style={{ color: "var(--brand-green)" }}
               />
-            ) : null}
+            ) : null)}
           </div>
         </div>
       </div>

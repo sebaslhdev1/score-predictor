@@ -64,6 +64,16 @@ export interface Translation {
     whoWins: string
     closedMatches: string
     noClosedMatches: string
+    closesOn: string
+    championTitle: string
+    championSubtitle: string
+    championPlaceholder: string
+    championSubmit: string
+    championSubmitting: string
+    championSuccess: string
+    championSaved: string
+    championChange: string
+    championNoResults: string
   }
   scoreboard: {
     title: string

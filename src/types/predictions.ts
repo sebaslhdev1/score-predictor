@@ -10,6 +10,8 @@ export interface Match {
   away_team: string
   away_team_icon_code: string | null
   score: string | null
+  winner: string | null
+  points_earned: number | null
 }
 
 export interface MatchSubmission {

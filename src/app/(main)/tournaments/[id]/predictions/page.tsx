@@ -1,5 +1,6 @@
 "use client"
 
+import { ChampionPicker } from "@/components/predictions/champion-picker"
 import { MatchCard } from "@/components/predictions/match-card"
 import { useLocale } from "@/i18n/provider"
 import { useT } from "@/i18n/use-t"
@@ -7,6 +8,7 @@ import {
   buildSubmitPayload,
   formatMatchDate,
   getClosedMatches,
+  getQuestions,
   getTournamentById,
   groupMatchesByDate,
   isMatchLocked,
@@ -14,6 +16,7 @@ import {
   scoreToPrediction,
 } from "@/services/predictions"
 import type { Match, PredictionValue } from "@/types/predictions"
+import type { Question, QuestionOption, QuestionPrediction } from "@/types/questions"
 import { ChevronDown, ChevronLeft, Loader2, Lock, Trophy } from "lucide-react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
@@ -64,6 +67,9 @@ export default function PredictionsPage() {
   const [closedMatches, setClosedMatches] = useState<Match[]>([])
   const [closedLoading, setClosedLoading] = useState(false)
   const [closedLoaded, setClosedLoaded] = useState(false)
+  const [questions, setQuestions] = useState<Question[]>([])
+  const [questionPicks, setQuestionPicks] = useState<Record<string, QuestionOption | null>>({})
+  const [serverQuestionPicks, setServerQuestionPicks] = useState<Record<string, QuestionOption | null>>({})
 
   function handleToggleClosed() {
     setClosedOpen((prev) => !prev)
@@ -80,10 +86,15 @@ export default function PredictionsPage() {
   }
 
   useEffect(() => {
-    getTournamentById(tournamentId)
-      .then(({ name, matches: data }) => {
+    Promise.all([getTournamentById(tournamentId), getQuestions(tournamentId).catch(() => [])])
+      .then(([{ name, matches: data }, qs]) => {
         setTournamentName(name)
         setMatches(data)
+        setQuestions(qs)
+        const initialQuestionPicks: Record<string, QuestionOption | null> = {}
+        qs.forEach((q) => { initialQuestionPicks[q.id] = q.answer ?? null })
+        setQuestionPicks(initialQuestionPicks)
+        setServerQuestionPicks(initialQuestionPicks)
         const initial: Record<string, PredictionValue> = {}
         data.forEach((m) => {
           initial[m.match_id] = scoreToPrediction(m)
@@ -104,6 +115,13 @@ export default function PredictionsPage() {
       const next = { ...prev }
       matches.forEach((m) => {
         next[m.match_id] = serverPredictions[m.match_id] ?? null
+      })
+      return next
+    })
+    setQuestionPicks((prev) => {
+      const next = { ...prev }
+      questions.forEach((q) => {
+        next[q.id] = serverQuestionPicks[q.id] ?? null
       })
       return next
     })
@@ -183,8 +201,12 @@ export default function PredictionsPage() {
     setIsSubmitting(true)
     setSubmitError(null)
     try {
+      const questionPredictions: QuestionPrediction[] = questions
+        .filter((q) => questionPicks[q.id] != null)
+        .map((q) => ({ question_id: q.id, option_id: questionPicks[q.id]!.id }))
       const { blocked } = await recordPredictions(
         buildSubmitPayload(matches, predictions),
+        questionPredictions,
       )
       setSubmitted(true)
       const savedIds = matches
@@ -203,6 +225,11 @@ export default function PredictionsPage() {
         return next
       })
       setPersistedMatchIds((prev) => new Set([...prev, ...savedIds]))
+      setServerQuestionPicks((prev) => {
+        const next = { ...prev }
+        questions.forEach((q) => { next[q.id] = questionPicks[q.id] ?? null })
+        return next
+      })
       // Revert incomplete KO ties back to their server-saved state
       setPredictions((prev) => {
         const next = { ...prev }
@@ -232,13 +259,19 @@ export default function PredictionsPage() {
   const submittable = (m: Match, p: PredictionValue) =>
     m.match_type === "Knockout" && p === "tie" ? null : p
 
-  const unsubmittedCount = matches.filter((m) => {
-    const rawLocal = predictions[m.match_id] ?? null
-    if (m.match_type === "Knockout" && rawLocal === "tie") return false
-    const local = submittable(m, rawLocal)
-    const server = submittable(m, serverPredictions[m.match_id] ?? null)
-    return local !== server
-  }).length
+  const unsubmittedCount =
+    matches.filter((m) => {
+      const rawLocal = predictions[m.match_id] ?? null
+      if (m.match_type === "Knockout" && rawLocal === "tie") return false
+      const local = submittable(m, rawLocal)
+      const server = submittable(m, serverPredictions[m.match_id] ?? null)
+      return local !== server
+    }).length +
+    questions.filter((q) => {
+      const local = questionPicks[q.id] ?? null
+      const server = serverQuestionPicks[q.id] ?? null
+      return local?.id !== server?.id
+    }).length
   const progressPct =
     totalMatches > 0 ? (predictedCount / totalMatches) * 100 : 0
   const matchesByDate = groupMatchesByDate(matches)
@@ -342,6 +375,20 @@ export default function PredictionsPage() {
             </div>
           )}
         </div>
+
+        {/* Question predictions */}
+        {questions.map((q) => (
+          <ChampionPicker
+            key={q.id}
+            question={q}
+            value={questionPicks[q.id] ?? null}
+            onChange={(opt) => {
+              setQuestionPicks((prev) => ({ ...prev, [q.id]: opt }))
+              setSubmitted(false)
+              setSubmitError(null)
+            }}
+          />
+        ))}
 
         {/* Closed matches */}
         {!isLoading && !loadError && (
@@ -475,7 +522,7 @@ export default function PredictionsPage() {
                     prediction={predictions[match.match_id] ?? null}
                     serverPrediction={serverPredictions[match.match_id] ?? null}
                     tieLabel={t.predictions.tie}
-                    locked={isMatchLocked(match.due_date)}
+                    locked={isMatchLocked(match.due_date) || isSubmitting}
                     isPersisted={persistedMatchIds.has(match.match_id)}
                     isClearing={clearingMatchId === match.match_id}
                     onPredict={handlePredict}
