@@ -45,6 +45,8 @@ export default function PredictionsPage() {
   const { locale } = useLocale()
   const { id: tournamentId } = useParams() as { id: string }
 
+  const draftKey = `predictions_draft_${tournamentId}`
+
   const [matches, setMatches] = useState<Match[]>([])
   const [predictions, setPredictions] = useState<
     Record<string, PredictionValue>
@@ -91,24 +93,68 @@ export default function PredictionsPage() {
         setTournamentName(name)
         setMatches(data)
         setQuestions(qs)
-        const initialQuestionPicks: Record<string, QuestionOption | null> = {}
-        qs.forEach((q) => { initialQuestionPicks[q.id] = q.answer ?? null })
-        setQuestionPicks(initialQuestionPicks)
-        setServerQuestionPicks(initialQuestionPicks)
-        const initial: Record<string, PredictionValue> = {}
-        data.forEach((m) => {
-          initial[m.match_id] = scoreToPrediction(m)
-        })
-        setPredictions(initial)
-        setServerPredictions(initial)
-        if (data.some((m) => m.score !== null)) setSubmitted(true)
+
+        const serverQPicks: Record<string, QuestionOption | null> = {}
+        qs.forEach((q) => { serverQPicks[q.id] = q.answer ?? null })
+        setServerQuestionPicks(serverQPicks)
+
+        const serverPreds: Record<string, PredictionValue> = {}
+        data.forEach((m) => { serverPreds[m.match_id] = scoreToPrediction(m) })
+        setServerPredictions(serverPreds)
+
+        // Restore draft picks for non-locked matches/questions
+        let draft: { predictions?: Record<string, PredictionValue>; questionPicks?: Record<string, QuestionOption | null> } | null = null
+        try {
+          const raw = localStorage.getItem(draftKey)
+          if (raw) draft = JSON.parse(raw)
+        } catch { /* ignore parse errors */ }
+
+        const mergedPreds = { ...serverPreds }
+        if (draft?.predictions) {
+          data.forEach((m) => {
+            if (!isMatchLocked(m.due_date) && m.match_id in draft!.predictions!) {
+              mergedPreds[m.match_id] = draft!.predictions![m.match_id]
+            }
+          })
+        }
+
+        const mergedQPicks = { ...serverQPicks }
+        if (draft?.questionPicks) {
+          qs.forEach((q) => {
+            if (!isMatchLocked(q.due_date) && q.id in draft!.questionPicks!) {
+              mergedQPicks[q.id] = draft!.questionPicks![q.id]
+            }
+          })
+        }
+
+        setPredictions(mergedPreds)
+        setQuestionPicks(mergedQPicks)
+
+        const hasRestoredChanges =
+          data.some(
+            (m) =>
+              !isMatchLocked(m.due_date) &&
+              mergedPreds[m.match_id] !== serverPreds[m.match_id],
+          ) ||
+          qs.some(
+            (q) =>
+              !isMatchLocked(q.due_date) &&
+              (mergedQPicks[q.id]?.id ?? null) !== (serverQPicks[q.id]?.id ?? null),
+          )
+        if (data.some((m) => m.score !== null) && !hasRestoredChanges) setSubmitted(true)
         setPersistedMatchIds(
           new Set(data.filter((m) => m.score !== null).map((m) => m.match_id)),
         )
       })
       .catch(() => setLoadError(true))
       .finally(() => setIsLoading(false))
-  }, [tournamentId])
+  }, [tournamentId, draftKey])
+
+  // Persist draft to localStorage after every change (skips during initial load)
+  useEffect(() => {
+    if (isLoading) return
+    localStorage.setItem(draftKey, JSON.stringify({ predictions, questionPicks }))
+  }, [predictions, questionPicks, isLoading, draftKey])
 
   function handleDiscard() {
     setPredictions((prev) => {
