@@ -537,7 +537,7 @@ export default function PredictionsPage() {
       {/* Floating action buttons */}
       {!isLoading && !loadError && (
         <div
-          className={`fixed bottom-24 left-0 right-0 z-20 flex justify-center px-4 md:bottom-8 transition-all duration-300 ${
+          className={`fixed bottom-24 left-0 right-0 z-50 flex justify-center px-4 md:bottom-8 transition-all duration-300 ${
             unsubmittedCount > 0
               ? "opacity-100 translate-y-0 pointer-events-auto"
               : "opacity-0 translate-y-3 pointer-events-none"
