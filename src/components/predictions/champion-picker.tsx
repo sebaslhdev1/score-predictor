@@ -1,13 +1,13 @@
 "use client"
 
-import { useCallback, useEffect, useRef, useState } from "react"
-import Image from "next/image"
-import { ChevronDown, Search, Star, X } from "lucide-react"
-import { cn } from "@/lib/utils"
-import { useT } from "@/i18n/use-t"
 import { useLocale } from "@/i18n/provider"
-import type { Question, QuestionOption } from "@/types/questions"
+import { useT } from "@/i18n/use-t"
+import { cn } from "@/lib/utils"
 import { isMatchLocked } from "@/services/predictions"
+import type { Question, QuestionOption } from "@/types/questions"
+import { ChevronDown, Search, Star, X } from "lucide-react"
+import Image from "next/image"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { Countdown } from "./countdown"
 
 const FIVE_HOURS_MS = 5 * 60 * 60 * 1000
@@ -30,9 +30,14 @@ interface ChampionPickerProps {
   onChange: (option: QuestionOption | null) => void
 }
 
-export function ChampionPicker({ question, value, onChange }: ChampionPickerProps) {
+export function ChampionPicker({
+  question,
+  value,
+  onChange,
+}: ChampionPickerProps) {
   const t = useT()
   const { locale } = useLocale()
+  const cardRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const inputWrapperRef = useRef<HTMLDivElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -42,17 +47,24 @@ export function ChampionPicker({ question, value, onChange }: ChampionPickerProp
   const [expanded, setExpanded] = useState(false)
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0, width: 0 })
 
-  const questionTitle = question.question[locale as "en" | "es"] ?? question.question.en
+  const questionTitle =
+    question.question[locale as "en" | "es"] ?? question.question.en
 
-  const [isLocked, setIsLocked] = useState(() => isMatchLocked(question.due_date))
+  const [isLocked, setIsLocked] = useState(() =>
+    isMatchLocked(question.due_date),
+  )
   const handleExpire = useCallback(() => {
     setIsLocked(true)
     setExpanded(false)
     setDropdownOpen(false)
   }, [])
 
-  const remaining = new Date(question.due_date + "-05:00").getTime() - Date.now()
-  const showStaticClose = !isLocked && remaining > FIVE_HOURS_MS
+  const [showStaticClose] = useState(
+    () =>
+      !isMatchLocked(question.due_date) &&
+      new Date(question.due_date + "-05:00").getTime() - Date.now() >
+        FIVE_HOURS_MS,
+  )
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -72,10 +84,16 @@ export function ChampionPicker({ question, value, onChange }: ChampionPickerProp
     opt.option_text.toLowerCase().includes(search.toLowerCase()),
   )
 
+  // Position dropdown relative to the card so it scrolls with the page naturally
   function openDropdown() {
-    if (inputWrapperRef.current) {
-      const r = inputWrapperRef.current.getBoundingClientRect()
-      setDropdownPos({ top: r.bottom + 6, left: r.left, width: r.width })
+    if (inputWrapperRef.current && cardRef.current) {
+      const inputRect = inputWrapperRef.current.getBoundingClientRect()
+      const cardRect = cardRef.current.getBoundingClientRect()
+      setDropdownPos({
+        top: inputRect.bottom - cardRect.top + 6,
+        left: inputRect.left - cardRect.left,
+        width: inputRect.width,
+      })
     }
     setDropdownOpen(true)
   }
@@ -111,69 +129,87 @@ export function ChampionPicker({ question, value, onChange }: ChampionPickerProp
     }, 0)
   }
 
+  const closeLabel = showStaticClose ? (
+    <span className='text-xs text-muted-foreground'>
+      {t.predictions.closesOn} {formatCloseDate(question.due_date, locale)}
+    </span>
+  ) : !isLocked ? (
+    <Countdown dueDateStr={question.due_date} onExpire={handleExpire} />
+  ) : null
+
   return (
     <div
-      className="mb-6 rounded-2xl bg-card"
+      ref={cardRef}
+      className='relative mb-6 rounded-2xl bg-card'
       style={{
-        border: "1px solid color-mix(in srgb, var(--brand-orange) 22%, transparent)",
+        border:
+          "1px solid color-mix(in srgb, var(--brand-orange) 22%, transparent)",
         borderTop: "3px solid var(--brand-orange)",
       }}
     >
       {/* Header — toggle button */}
       <button
         onClick={handleToggle}
-        className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left transition-opacity hover:opacity-80"
+        className='flex w-full flex-col gap-1 px-5 py-4 text-left transition-opacity hover:opacity-80'
       >
-        <div className="flex min-w-0 items-center gap-2.5">
-          <div
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
-            style={{ backgroundColor: "color-mix(in srgb, var(--brand-orange) 14%, transparent)" }}
-          >
-            <Star className="h-4 w-4" style={{ color: "var(--brand-orange)" }} fill="currentColor" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-sm font-bold leading-tight" style={{ color: "var(--brand-dark)" }}>
-              {questionTitle}
-            </p>
-            <div className="flex items-center gap-1.5">
-              <p className="truncate text-xs text-muted-foreground">{t.predictions.championSubtitle}</p>
-              {showStaticClose && (
-                <>
-                  <span className="text-muted-foreground/40">·</span>
-                  <span className="shrink-0 text-xs text-muted-foreground">
-                    {t.predictions.closesOn} {formatCloseDate(question.due_date, locale)}
-                  </span>
-                </>
-              )}
-              {!isLocked && !showStaticClose && (
-                <Countdown dueDateStr={question.due_date} onExpire={handleExpire} />
-              )}
-            </div>
-          </div>
-        </div>
+        {/* Mobile countdown — first row */}
+        {closeLabel && <div className='sm:hidden'>{closeLabel}</div>}
 
-        <div className="flex shrink-0 items-center gap-2">
-          {value && (
-            <div className="flex items-center gap-1.5">
-              <Image
-                src={`https://flagcdn.com/w40/${value.icon_code}.png`}
-                alt={value.option_text}
-                width={22}
-                height={15}
-                className="rounded object-cover"
-                unoptimized
+        {/* Main header row */}
+        <div className='flex w-full items-center justify-between gap-3'>
+          <div className='flex min-w-0 items-center gap-2.5'>
+            <div
+              className='flex h-8 w-8 shrink-0 items-center justify-center rounded-full'
+              style={{
+                backgroundColor:
+                  "color-mix(in srgb, var(--brand-orange) 14%, transparent)",
+              }}
+            >
+              <Star
+                className='h-4 w-4'
+                style={{ color: "var(--brand-orange)" }}
+                fill='currentColor'
               />
-              <span className="text-sm font-semibold" style={{ color: "var(--brand-dark)" }}>
-                {value.option_text}
-              </span>
             </div>
-          )}
-          <ChevronDown
-            className={cn(
-              "h-4 w-4 text-muted-foreground transition-transform duration-300",
-              expanded ? "rotate-180" : "",
+            <div className='min-w-0'>
+              <p
+                className='text-sm font-bold leading-tight'
+                style={{ color: "var(--brand-dark)" }}
+              >
+                {questionTitle}
+              </p>
+            </div>
+          </div>
+
+          <div className='flex shrink-0 items-center gap-2'>
+            {/* Desktop countdown — top right */}
+            {closeLabel && <div className='hidden sm:flex'>{closeLabel}</div>}
+
+            {value && (
+              <div className='flex items-center gap-1.5'>
+                <Image
+                  src={`https://flagcdn.com/w40/${value.icon_code}.png`}
+                  alt={value.option_text}
+                  width={22}
+                  height={15}
+                  className='rounded object-cover'
+                  unoptimized
+                />
+                <span
+                  className='text-sm font-semibold'
+                  style={{ color: "var(--brand-dark)" }}
+                >
+                  {value.option_text}
+                </span>
+              </div>
             )}
-          />
+            <ChevronDown
+              className={cn(
+                "h-4 w-4 text-muted-foreground transition-transform duration-300",
+                expanded ? "rotate-180" : "",
+              )}
+            />
+          </div>
         </div>
       </button>
 
@@ -184,8 +220,8 @@ export function ChampionPicker({ question, value, onChange }: ChampionPickerProp
           expanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
         )}
       >
-        <div className="overflow-hidden">
-          <div className="px-5 pb-5">
+        <div className='overflow-hidden'>
+          <div className='px-5 pb-5'>
             <div
               ref={inputWrapperRef}
               className={cn(
@@ -196,7 +232,10 @@ export function ChampionPicker({ question, value, onChange }: ChampionPickerProp
               )}
               style={
                 dropdownOpen
-                  ? { boxShadow: "0 0 0 3px color-mix(in srgb, var(--brand-orange) 15%, transparent)" }
+                  ? {
+                      boxShadow:
+                        "0 0 0 3px color-mix(in srgb, var(--brand-orange) 15%, transparent)",
+                    }
                   : undefined
               }
               onClick={() => {
@@ -217,25 +256,28 @@ export function ChampionPicker({ question, value, onChange }: ChampionPickerProp
                     alt={value.option_text}
                     width={26}
                     height={18}
-                    className="shrink-0 rounded object-cover"
+                    className='shrink-0 rounded object-cover'
                     unoptimized
                   />
-                  <span className="flex-1 text-sm font-semibold" style={{ color: "var(--brand-dark)" }}>
+                  <span
+                    className='flex-1 text-sm font-semibold'
+                    style={{ color: "var(--brand-dark)" }}
+                  >
                     {value.option_text}
                   </span>
                   <button
                     onClick={handleClear}
-                    className="shrink-0 rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground"
+                    className='shrink-0 rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground'
                   >
-                    <X className="h-4 w-4" />
+                    <X className='h-4 w-4' />
                   </button>
                 </>
               ) : (
                 <>
-                  <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <Search className='h-4 w-4 shrink-0 text-muted-foreground' />
                   <input
                     ref={inputRef}
-                    type="text"
+                    type='text'
                     value={search}
                     onChange={(e) => {
                       setSearch(e.target.value)
@@ -243,7 +285,7 @@ export function ChampionPicker({ question, value, onChange }: ChampionPickerProp
                     }}
                     onFocus={openDropdown}
                     placeholder={t.predictions.championPlaceholder}
-                    className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                    className='flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground'
                   />
                   <ChevronDown
                     className={cn(
@@ -258,20 +300,21 @@ export function ChampionPicker({ question, value, onChange }: ChampionPickerProp
         </div>
       </div>
 
-      {/* Country dropdown — fixed to viewport so it escapes overflow-hidden */}
+      {/* Country dropdown — absolute to card, escapes overflow-hidden accordion */}
       {dropdownOpen && !value && (
         <div
           ref={dropdownRef}
-          className="fixed z-50 max-h-60 overflow-y-auto rounded-xl bg-white shadow-xl"
+          className='absolute z-50 max-h-60 overflow-y-auto rounded-xl bg-white shadow-xl'
           style={{
             top: dropdownPos.top,
             left: dropdownPos.left,
             width: dropdownPos.width,
-            border: "1px solid color-mix(in srgb, var(--brand-dark) 10%, transparent)",
+            border:
+              "1px solid color-mix(in srgb, var(--brand-dark) 10%, transparent)",
           }}
         >
           {filteredOptions.length === 0 ? (
-            <p className="py-6 text-center text-sm text-muted-foreground">
+            <p className='py-6 text-center text-sm text-muted-foreground'>
               {t.predictions.championNoResults}
             </p>
           ) : (
@@ -282,7 +325,7 @@ export function ChampionPicker({ question, value, onChange }: ChampionPickerProp
                   e.preventDefault()
                   handleSelect(opt)
                 }}
-                className="flex w-full items-center gap-3 px-4 py-2.5 text-sm transition-colors hover:bg-black/5"
+                className='flex w-full items-center gap-3 px-4 py-2.5 text-sm transition-colors hover:bg-black/5'
                 style={{ color: "var(--brand-dark)" }}
               >
                 <Image
@@ -290,7 +333,7 @@ export function ChampionPicker({ question, value, onChange }: ChampionPickerProp
                   alt={opt.option_text}
                   width={24}
                   height={16}
-                  className="shrink-0 rounded object-cover"
+                  className='shrink-0 rounded object-cover'
                   unoptimized
                 />
                 <span>{opt.option_text}</span>

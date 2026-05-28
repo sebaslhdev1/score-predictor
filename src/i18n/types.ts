@@ -65,8 +65,6 @@ export interface Translation {
     closedMatches: string
     noClosedMatches: string
     closesOn: string
-    championTitle: string
-    championSubtitle: string
     championPlaceholder: string
     championSubmit: string
     championSubmitting: string

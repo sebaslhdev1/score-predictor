@@ -10,7 +10,8 @@ export const en: Translation = {
     name: "Name",
     namePlaceholder: "Your name",
     newUserTitle: "Welcome!",
-    newUserDesc: "Looks like you're new here. Enter your name to create your account.",
+    newUserDesc:
+      "Looks like you're new here. Enter your name to create your account.",
     createAccount: "Create account",
     creatingAccount: "Creating account…",
     createAccountError: "Could not create your account. Please try again.",
@@ -52,7 +53,8 @@ export const en: Translation = {
     submit: "Submit predictions",
     submitting: "Submitting…",
     submitSuccess: "Predictions submitted!",
-    submitSuccessDesc: "Your picks have been recorded. You can still update them.",
+    submitSuccessDesc:
+      "Your picks have been recorded. You can still update them.",
     predictionRemoved: "Prediction removed.",
     predictionBlocked: "Match is closed — prediction not saved",
     today: "Today",
@@ -65,8 +67,6 @@ export const en: Translation = {
     closedMatches: "Closed matches",
     noClosedMatches: "No closed matches yet.",
     closesOn: "Closes",
-    championTitle: "Pick the Champion",
-    championSubtitle: "Who do you think will win the tournament?",
     championPlaceholder: "Search country…",
     championSubmit: "Save Champion Pick",
     championSubmitting: "Saving…",
@@ -85,7 +85,8 @@ export const en: Translation = {
     noResults: "No results yet. Check back once matches are completed.",
     loadError: "Could not load scoreboard. Please try again.",
     wipBadge: "Coming soon",
-    wipDesc: "The scoreboard will be live once the first matches are completed.",
+    wipDesc:
+      "The scoreboard will be live once the first matches are completed.",
     you: "You",
     refresh: "Refresh",
     refreshing: "Refreshing…",
@@ -109,7 +110,8 @@ export const en: Translation = {
   },
   errors: {
     sessionExpiredTitle: "Session expired",
-    sessionExpiredDesc: "Your session has expired. Please sign in again to continue.",
+    sessionExpiredDesc:
+      "Your session has expired. Please sign in again to continue.",
     sessionExpiredButton: "Go to Login",
   },
 }

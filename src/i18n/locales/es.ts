@@ -10,10 +10,12 @@ export const es: Translation = {
     name: "Nombre",
     namePlaceholder: "Tu nombre",
     newUserTitle: "¡Bienvenido!",
-    newUserDesc: "Parece que eres nuevo. Ingresa tu nombre para crear tu cuenta.",
+    newUserDesc:
+      "Parece que eres nuevo. Ingresa tu nombre para crear tu cuenta.",
     createAccount: "Crear cuenta",
     creatingAccount: "Creando cuenta…",
-    createAccountError: "No se pudo crear tu cuenta. Por favor intenta de nuevo.",
+    createAccountError:
+      "No se pudo crear tu cuenta. Por favor intenta de nuevo.",
     verify: "Verificar",
     verifying: "Verificando…",
     otpHint: "Te enviaremos un código de un solo uso a tu correo.",
@@ -47,12 +49,15 @@ export const es: Translation = {
     subtitle: "Elige tu resultado para cada partido y envía todo al final.",
     tie: "Empate",
     noMatches: "Aún no hay partidos disponibles.",
-    loadError: "No se pudieron cargar los partidos. Por favor intenta de nuevo.",
-    submitError: "No se pudieron enviar tus predicciones. Por favor intenta de nuevo.",
+    loadError:
+      "No se pudieron cargar los partidos. Por favor intenta de nuevo.",
+    submitError:
+      "No se pudieron enviar tus predicciones. Por favor intenta de nuevo.",
     submit: "Enviar predicciones",
     submitting: "Enviando…",
     submitSuccess: "¡Predicciones enviadas!",
-    submitSuccessDesc: "Tus elecciones han sido registradas. Aún puedes actualizarlas.",
+    submitSuccessDesc:
+      "Tus elecciones han sido registradas. Aún puedes actualizarlas.",
     predictionRemoved: "Predicción eliminada.",
     predictionBlocked: "Partido cerrado — predicción no guardada",
     today: "Hoy",
@@ -65,8 +70,6 @@ export const es: Translation = {
     closedMatches: "Partidos cerrados",
     noClosedMatches: "Aún no hay partidos cerrados.",
     closesOn: "Cierra el",
-    championTitle: "Elige al Campeón",
-    championSubtitle: "¿Quién crees que ganará el torneo?",
     championPlaceholder: "Buscar país…",
     championSubmit: "Guardar predicción",
     championSubmitting: "Guardando…",
@@ -85,7 +88,8 @@ export const es: Translation = {
     noResults: "Aún no hay resultados. Vuelve cuando terminen los partidos.",
     loadError: "No se pudo cargar el marcador. Por favor intenta de nuevo.",
     wipBadge: "Próximamente",
-    wipDesc: "El marcador estará disponible cuando terminen los primeros partidos.",
+    wipDesc:
+      "El marcador estará disponible cuando terminen los primeros partidos.",
     you: "Tú",
     refresh: "Actualizar",
     refreshing: "Actualizando…",
@@ -96,9 +100,11 @@ export const es: Translation = {
     subtitle: "Todos los invitados a este torneo.",
     predictions: "predicciones",
     noParticipants: "Aún no hay participantes.",
-    loadError: "No se pudieron cargar los participantes. Por favor intenta de nuevo.",
+    loadError:
+      "No se pudieron cargar los participantes. Por favor intenta de nuevo.",
     wipBadge: "Próximamente",
-    wipDesc: "Los datos de participantes estarán disponibles cuando el backend esté listo.",
+    wipDesc:
+      "Los datos de participantes estarán disponibles cuando el backend esté listo.",
   },
   tournaments: {
     title: "Mis Torneos",
@@ -109,7 +115,8 @@ export const es: Translation = {
   },
   errors: {
     sessionExpiredTitle: "Sesión expirada",
-    sessionExpiredDesc: "Tu sesión ha expirado. Por favor inicia sesión de nuevo para continuar.",
+    sessionExpiredDesc:
+      "Tu sesión ha expirado. Por favor inicia sesión de nuevo para continuar.",
     sessionExpiredButton: "Ir al Login",
   },
 }
