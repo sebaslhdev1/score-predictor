@@ -37,7 +37,6 @@ export function ChampionPicker({
 }: ChampionPickerProps) {
   const t = useT()
   const { locale } = useLocale()
-  const cardRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const inputWrapperRef = useRef<HTMLDivElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -84,16 +83,28 @@ export function ChampionPicker({
     opt.option_text.toLowerCase().includes(search.toLowerCase()),
   )
 
-  // Position dropdown relative to the card so it scrolls with the page naturally
+  // Update dropdown position directly in the DOM to avoid re-render lag on scroll
+  useEffect(() => {
+    if (!dropdownOpen) return
+    function syncPos() {
+      if (!inputWrapperRef.current || !dropdownRef.current) return
+      const r = inputWrapperRef.current.getBoundingClientRect()
+      dropdownRef.current.style.top = `${r.bottom + 6}px`
+      dropdownRef.current.style.left = `${r.left}px`
+      dropdownRef.current.style.width = `${r.width}px`
+    }
+    window.addEventListener("scroll", syncPos, true)
+    window.addEventListener("resize", syncPos)
+    return () => {
+      window.removeEventListener("scroll", syncPos, true)
+      window.removeEventListener("resize", syncPos)
+    }
+  }, [dropdownOpen])
+
   function openDropdown() {
-    if (inputWrapperRef.current && cardRef.current) {
-      const inputRect = inputWrapperRef.current.getBoundingClientRect()
-      const cardRect = cardRef.current.getBoundingClientRect()
-      setDropdownPos({
-        top: inputRect.bottom - cardRect.top + 6,
-        left: inputRect.left - cardRect.left,
-        width: inputRect.width,
-      })
+    if (inputWrapperRef.current) {
+      const r = inputWrapperRef.current.getBoundingClientRect()
+      setDropdownPos({ top: r.bottom + 6, left: r.left, width: r.width })
     }
     setDropdownOpen(true)
   }
@@ -139,8 +150,7 @@ export function ChampionPicker({
 
   return (
     <div
-      ref={cardRef}
-      className='relative mb-6 rounded-2xl bg-card'
+      className='mb-6 rounded-2xl bg-card'
       style={{
         border:
           "1px solid color-mix(in srgb, var(--brand-orange) 22%, transparent)",
@@ -300,11 +310,11 @@ export function ChampionPicker({
         </div>
       </div>
 
-      {/* Country dropdown — absolute to card, escapes overflow-hidden accordion */}
+      {/* Country dropdown — fixed so it escapes overflow-hidden, z-40 keeps it below navbar */}
       {dropdownOpen && !value && (
         <div
           ref={dropdownRef}
-          className='absolute z-50 max-h-60 overflow-y-auto rounded-xl bg-white shadow-xl'
+          className='fixed z-40 max-h-60 overflow-y-auto rounded-xl bg-white shadow-xl'
           style={{
             top: dropdownPos.top,
             left: dropdownPos.left,

@@ -40,7 +40,7 @@ export function BottomNav() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-10 border-t transition-transform duration-300 md:hidden"
+      className="fixed bottom-0 left-0 right-0 z-50 border-t transition-transform duration-300 md:hidden"
       style={{
         backgroundColor: "var(--brand-dark)",
         borderColor: "rgba(255,255,255,0.06)",
