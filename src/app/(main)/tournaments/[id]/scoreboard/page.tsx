@@ -114,7 +114,9 @@ export default function ScoreboardPage() {
       {/* Table */}
       {!isLoading && !loadError && entries.length > 0 && (
         <div className="space-y-2">
-          {entries.map((entry) => (
+          {entries.map((entry, index) => {
+            const rank = entries.filter(e => e.points > entry.points).length + 1
+            return (
             <div
               key={entry.user_id}
               className={cn(
@@ -132,7 +134,7 @@ export default function ScoreboardPage() {
             >
               {/* Rank */}
               <div className="flex w-7 items-center justify-center shrink-0">
-                <RankBadge rank={entry.rank} />
+                <RankBadge rank={rank} />
               </div>
 
               {/* Name */}
@@ -168,7 +170,8 @@ export default function ScoreboardPage() {
                 </p>
               </div>
             </div>
-          ))}
+            )
+          })}
         </div>
       )}
     </main>
