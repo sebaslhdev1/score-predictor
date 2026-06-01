@@ -2,10 +2,11 @@
 
 import { useLocale } from "@/i18n/provider"
 import { useT } from "@/i18n/use-t"
+import { utcToLocal } from "@/lib/date"
 import { cn } from "@/lib/utils"
 import { isMatchLocked } from "@/services/predictions"
 import type { Question, QuestionOption } from "@/types/questions"
-import { ChevronDown, Search, Star, X } from "lucide-react"
+import { Check, ChevronDown, Search, Star, X } from "lucide-react"
 import Image from "next/image"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { Countdown } from "./countdown"
@@ -17,8 +18,7 @@ function formatCloseDate(dueDateStr: string, locale: string): string {
     return new Intl.DateTimeFormat(locale === "es" ? "es-MX" : "en-US", {
       month: "short",
       day: "numeric",
-      timeZone: "America/Bogota",
-    }).format(new Date(dueDateStr + "-05:00"))
+    }).format(utcToLocal(dueDateStr))
   } catch {
     return dueDateStr
   }
@@ -61,7 +61,7 @@ export function ChampionPicker({
   const [showStaticClose] = useState(
     () =>
       !isMatchLocked(question.due_date) &&
-      new Date(question.due_date + "-05:00").getTime() - Date.now() >
+      utcToLocal(question.due_date).getTime() - Date.now() >
         FIVE_HOURS_MS,
   )
 
@@ -109,7 +109,13 @@ export function ChampionPicker({
     setDropdownOpen(true)
   }
 
+  const hasResult = question.result != null
+  const hasPick = value !== null
+  const isCorrect = hasResult && hasPick && value!.icon_code === question.result!.icon_code
+  const isWrong = hasResult && hasPick && !isCorrect
+
   function handleToggle() {
+    if (isLocked || hasResult) return
     const next = !expanded
     setExpanded(next)
     if (!next) {
@@ -151,11 +157,22 @@ export function ChampionPicker({
   return (
     <div
       className='mb-6 rounded-2xl bg-card'
-      style={{
-        border:
-          "1px solid color-mix(in srgb, var(--brand-orange) 22%, transparent)",
-        borderTop: "3px solid var(--brand-orange)",
-      }}
+      style={
+        hasResult
+          ? {
+              border: `2px solid ${
+                isCorrect
+                  ? "color-mix(in srgb, var(--brand-green) 55%, transparent)"
+                  : isWrong
+                  ? "color-mix(in srgb, var(--destructive) 45%, transparent)"
+                  : "color-mix(in srgb, var(--brand-dark) 20%, transparent)"
+              }`,
+            }
+          : {
+              border: "1px solid color-mix(in srgb, var(--brand-orange) 22%, transparent)",
+              borderTop: "3px solid var(--brand-orange)",
+            }
+      }
     >
       {/* Header — toggle button */}
       <button
@@ -195,30 +212,82 @@ export function ChampionPicker({
             {/* Desktop countdown — top right */}
             {closeLabel && <div className='hidden sm:flex'>{closeLabel}</div>}
 
-            {value && (
-              <div className='flex items-center gap-1.5'>
-                <Image
-                  src={`https://flagcdn.com/w40/${value.icon_code}.png`}
-                  alt={value.option_text}
-                  width={22}
-                  height={15}
-                  className='rounded object-cover'
-                  unoptimized
-                />
-                <span
-                  className='text-sm font-semibold'
-                  style={{ color: "var(--brand-dark)" }}
+            {hasResult ? (
+              <>
+                <div
+                  className='flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold'
+                  style={{
+                    backgroundColor: "color-mix(in srgb, var(--brand-green) 12%, transparent)",
+                    color: "var(--brand-green)",
+                  }}
                 >
-                  {value.option_text}
-                </span>
-              </div>
+                  <Image
+                    src={`https://flagcdn.com/w40/${question.result!.icon_code}.png`}
+                    alt={question.result!.option_text}
+                    width={18}
+                    height={13}
+                    className='rounded-sm object-cover'
+                    unoptimized
+                  />
+                  <span>{question.result!.option_text}</span>
+                  {isCorrect && <Check className='h-3 w-3' />}
+                </div>
+                {isWrong && (
+                  <div
+                    className='flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold line-through opacity-60'
+                    style={{
+                      backgroundColor: "color-mix(in srgb, var(--destructive) 10%, transparent)",
+                      color: "var(--destructive)",
+                    }}
+                  >
+                    <Image
+                      src={`https://flagcdn.com/w40/${value!.icon_code}.png`}
+                      alt={value!.option_text}
+                      width={18}
+                      height={13}
+                      className='rounded-sm object-cover'
+                      unoptimized
+                    />
+                    <span>{value!.option_text}</span>
+                    <X className='h-3 w-3' />
+                  </div>
+                )}
+                {isCorrect && (
+                  <span className='text-xs font-bold' style={{ color: "var(--brand-green)" }}>
+                    +{question.points}
+                  </span>
+                )}
+              </>
+            ) : (
+              <>
+                {value && (
+                  <div className='flex items-center gap-1.5'>
+                    <Image
+                      src={`https://flagcdn.com/w40/${value.icon_code}.png`}
+                      alt={value.option_text}
+                      width={22}
+                      height={15}
+                      className='rounded object-cover'
+                      unoptimized
+                    />
+                    <span
+                      className='text-sm font-semibold'
+                      style={{ color: "var(--brand-dark)" }}
+                    >
+                      {value.option_text}
+                    </span>
+                  </div>
+                )}
+                {!isLocked && (
+                  <ChevronDown
+                    className={cn(
+                      "h-4 w-4 text-muted-foreground transition-transform duration-300",
+                      expanded ? "rotate-180" : "",
+                    )}
+                  />
+                )}
+              </>
             )}
-            <ChevronDown
-              className={cn(
-                "h-4 w-4 text-muted-foreground transition-transform duration-300",
-                expanded ? "rotate-180" : "",
-              )}
-            />
           </div>
         </div>
       </button>
@@ -227,7 +296,7 @@ export function ChampionPicker({
       <div
         className={cn(
           "grid transition-all duration-300 ease-in-out",
-          expanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+          expanded && !isLocked && !hasResult ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
         )}
       >
         <div className='overflow-hidden'>
@@ -275,12 +344,14 @@ export function ChampionPicker({
                   >
                     {value.option_text}
                   </span>
-                  <button
-                    onClick={handleClear}
-                    className='shrink-0 rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground'
-                  >
-                    <X className='h-4 w-4' />
-                  </button>
+                  {!isLocked && (
+                    <button
+                      onClick={handleClear}
+                      className='shrink-0 rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground'
+                    >
+                      <X className='h-4 w-4' />
+                    </button>
+                  )}
                 </>
               ) : (
                 <>

@@ -4,6 +4,11 @@ export interface QuestionOption {
   icon_code: string
 }
 
+export interface QuestionResult {
+  icon_code: string
+  option_text: string
+}
+
 export interface Question {
   id: string
   question: { en: string; es: string }
@@ -11,6 +16,7 @@ export interface Question {
   points: number
   options: QuestionOption[]
   answer: QuestionOption | null
+  result: QuestionResult | null
 }
 
 export interface QuestionPrediction {

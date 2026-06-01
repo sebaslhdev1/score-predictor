@@ -1,4 +1,5 @@
 import { api } from "@/lib/api"
+import { utcToLocal } from "@/lib/date"
 import type {
   Match,
   MatchesByDate,
@@ -65,25 +66,24 @@ export function scoreToPrediction(match: Match): PredictionValue {
   return null
 }
 
-// Colombia is permanently UTC-5 (no DST)
-function parseDueDate(dueDateStr: string): Date {
-  return new Date(dueDateStr + "-05:00")
-}
-
 export function isMatchLocked(dueDateStr: string): boolean {
-  return Date.now() >= parseDueDate(dueDateStr).getTime()
+  return Date.now() >= utcToLocal(dueDateStr).getTime()
 }
 
 export function isMatchToday(dueDateStr: string): boolean {
-  const colombianNow = new Date(Date.now() - 5 * 60 * 60 * 1000)
-  const todayStr = colombianNow.toISOString().split("T")[0]
-  return dueDateStr.split("T")[0] === todayStr
+  const local = utcToLocal(dueDateStr)
+  const now = new Date()
+  return (
+    local.getFullYear() === now.getFullYear() &&
+    local.getMonth() === now.getMonth() &&
+    local.getDate() === now.getDate()
+  )
 }
 
 export function groupMatchesByDate(matches: Match[]): MatchesByDate {
   return matches.reduce<MatchesByDate>((acc, match) => {
-    // Extract the Colombian date portion ("YYYY-MM-DD") for grouping
-    const dateKey = match.due_date.split("T")[0]
+    const local = utcToLocal(match.due_date)
+    const dateKey = `${local.getFullYear()}-${String(local.getMonth() + 1).padStart(2, "0")}-${String(local.getDate()).padStart(2, "0")}`
     if (!acc[dateKey]) acc[dateKey] = []
     acc[dateKey].push(match)
     return acc
@@ -116,8 +116,9 @@ export function buildSubmitPayload(
 
 export function formatMatchTime(dueDateStr: string): string {
   try {
-    const timePart = dueDateStr.split("T")[1]?.slice(0, 5) ?? ""
-    const [h, m] = timePart.split(":").map(Number)
+    const local = utcToLocal(dueDateStr)
+    const h = local.getHours()
+    const m = local.getMinutes()
     const period = h >= 12 ? "PM" : "AM"
     const hour = h % 12 || 12
     return `${hour}:${m.toString().padStart(2, "0")} ${period}`
@@ -128,18 +129,15 @@ export function formatMatchTime(dueDateStr: string): string {
 
 export function formatMatchDate(dueDateStr: string, locale: string): string {
   try {
-    const dateKey = dueDateStr.split("T")[0]
-    const [year, month, day] = dateKey.split("-").map(Number)
-    const date = new Date(Date.UTC(year, month - 1, day, 12))
-    if (isNaN(date.getTime())) return dateKey
+    const local = utcToLocal(dueDateStr)
+    if (isNaN(local.getTime())) return dueDateStr
     return new Intl.DateTimeFormat(locale === "es" ? "es-MX" : "en-US", {
       weekday: "long",
       year: "numeric",
       month: "long",
       day: "numeric",
-      timeZone: "UTC",
-    }).format(date)
+    }).format(local)
   } catch {
-    return dueDateStr.split("T")[0]
+    return dueDateStr
   }
 }
