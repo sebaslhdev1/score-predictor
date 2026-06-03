@@ -75,7 +75,7 @@ export function Navbar() {
           {logoUrl ? (
             <Image
               src={logoUrl}
-              alt='Score Predictor logo'
+              alt='SportiQ logo'
               width={48}
               height={48}
               className='h-12 w-fit'

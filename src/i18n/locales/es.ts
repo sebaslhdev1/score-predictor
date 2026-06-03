@@ -29,7 +29,7 @@ export const es: Translation = {
     verifyError: "Código inválido. Por favor intenta de nuevo.",
   },
   nav: {
-    appTitle: "Score Predictor",
+    appTitle: "SportiQ",
     appSubtitle: "Predicciones de Torneos",
     logOut: "Cerrar sesión",
     language: "Idioma",

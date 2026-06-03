@@ -28,7 +28,7 @@ export const en: Translation = {
     verifyError: "Invalid code. Please try again.",
   },
   nav: {
-    appTitle: "Score Predictor",
+    appTitle: "SportiQ",
     appSubtitle: "Tournament Predictions",
     logOut: "Log out",
     language: "Language",
