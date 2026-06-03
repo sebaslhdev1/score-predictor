@@ -120,9 +120,6 @@ export default function LoginPage() {
             />
           </div>
         )}
-        <h1 className='text-2xl font-bold tracking-tight text-white'>
-          {t.nav.appTitle}
-        </h1>
         <p className='mt-1 text-sm' style={{ color: "var(--brand-muted)" }}>
           {t.auth.subtitle}
         </p>
