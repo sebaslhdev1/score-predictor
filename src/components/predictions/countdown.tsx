@@ -1,5 +1,6 @@
 "use client"
 
+import { utcToLocal } from "@/lib/date"
 import { useT } from "@/i18n/use-t"
 import { Timer } from "lucide-react"
 import { useEffect, useState } from "react"
@@ -14,7 +15,7 @@ export function Countdown({
   onExpire: () => void
 }) {
   const t = useT()
-  const dueMs = new Date(dueDateStr + "-05:00").getTime()
+  const dueMs = utcToLocal(dueDateStr).getTime()
   const [remaining, setRemaining] = useState(() =>
     Math.max(0, dueMs - Date.now()),
   )

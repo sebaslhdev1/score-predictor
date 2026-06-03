@@ -14,7 +14,7 @@ export interface Question {
   question: { en: string; es: string }
   due_date: string
   points: number
-  options: QuestionOption[]
+  options: QuestionOption[] | null
   answer: QuestionOption | null
   result: QuestionResult | null
 }

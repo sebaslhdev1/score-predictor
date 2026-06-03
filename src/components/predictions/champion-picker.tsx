@@ -79,7 +79,7 @@ export function ChampionPicker({
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
 
-  const filteredOptions = question.options.filter((opt) =>
+  const filteredOptions = (question.options ?? []).filter((opt) =>
     opt.option_text.toLowerCase().includes(search.toLowerCase()),
   )
 
