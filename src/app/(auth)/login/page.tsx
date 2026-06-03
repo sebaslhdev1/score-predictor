@@ -18,21 +18,32 @@ import { Label } from "@/components/ui/label"
 import { LanguageSwitcher } from "@/components/layout/language-switcher"
 import { useT } from "@/i18n/use-t"
 import { isNewUserError, signIn, signUp, verifyOtp } from "@/services/auth"
-import { saveSession } from "@/lib/session"
+import { getAccessToken, saveSession } from "@/lib/session"
 import { ArrowLeft } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 type View = "auth" | "signup" | "verify"
 
 export default function LoginPage() {
   const router = useRouter()
   const t = useT()
+  const [ready, setReady] = useState(false)
   const [view, setView] = useState<View>("auth")
   const [pendingEmail, setPendingEmail] = useState("")
   const [otp, setOtp] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
+
+  useEffect(() => {
+    if (getAccessToken()) {
+      router.replace("/tournaments")
+    } else {
+      setReady(true)
+    }
+  }, [router])
+
+  if (!ready) return null
 
   async function handleSendCode(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault()

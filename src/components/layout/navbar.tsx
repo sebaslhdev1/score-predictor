@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useSyncExternalStore } from "react"
+import { useEffect, useState, useSyncExternalStore } from "react"
 import { BarChart2, Globe, LogOut, Trophy, User, Users } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
@@ -30,10 +30,28 @@ export function Navbar() {
   const tournamentId = params?.id as string | undefined
 
   const userName = useSyncExternalStore(
-    () => () => {},
+    (cb) => {
+      window.addEventListener("storage", cb)
+      return () => window.removeEventListener("storage", cb)
+    },
     () => getUserName(),
     () => null,
   )
+
+  useEffect(() => {
+    function handleStorage(e: StorageEvent) {
+      if (e.key === "access_token" && !e.newValue) router.push("/login")
+    }
+    function handleExpired() {
+      router.push("/login")
+    }
+    window.addEventListener("storage", handleStorage)
+    window.addEventListener("auth:expired", handleExpired)
+    return () => {
+      window.removeEventListener("storage", handleStorage)
+      window.removeEventListener("auth:expired", handleExpired)
+    }
+  }, [router])
 
   function handleLogout() {
     logout()
