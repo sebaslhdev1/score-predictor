@@ -1,5 +1,6 @@
 "use client"
 
+import { LanguageSwitcher } from "@/components/layout/language-switcher"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -15,11 +16,11 @@ import {
   InputOTPSlot,
 } from "@/components/ui/input-otp"
 import { Label } from "@/components/ui/label"
-import { LanguageSwitcher } from "@/components/layout/language-switcher"
 import { useT } from "@/i18n/use-t"
-import { isNewUserError, signIn, signUp, verifyOtp } from "@/services/auth"
 import { getAccessToken, saveSession } from "@/lib/session"
+import { isNewUserError, signIn, signUp, verifyOtp } from "@/services/auth"
 import { ArrowLeft } from "lucide-react"
+import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 
@@ -28,7 +29,9 @@ type View = "auth" | "signup" | "verify"
 export default function LoginPage() {
   const router = useRouter()
   const t = useT()
-  const [ready, setReady] = useState(false)
+  const [shouldRedirect] = useState(
+    () => typeof window !== "undefined" && !!getAccessToken(),
+  )
   const [view, setView] = useState<View>("auth")
   const [pendingEmail, setPendingEmail] = useState("")
   const [otp, setOtp] = useState("")
@@ -36,14 +39,10 @@ export default function LoginPage() {
   const [error, setError] = useState("")
 
   useEffect(() => {
-    if (getAccessToken()) {
-      router.replace("/tournaments")
-    } else {
-      setReady(true)
-    }
-  }, [router])
+    if (shouldRedirect) router.replace("/tournaments")
+  }, [shouldRedirect, router])
 
-  if (!ready) return null
+  if (shouldRedirect) return null
 
   async function handleSendCode(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -109,6 +108,18 @@ export default function LoginPage() {
       </div>
 
       <div className='mb-8 text-center'>
+        {process.env.NEXT_PUBLIC_LOGO_URL && (
+          <div className='mb-4 flex justify-center'>
+            <Image
+              src={process.env.NEXT_PUBLIC_LOGO_URL}
+              alt={t.nav.appTitle}
+              width={360}
+              height={120}
+              className='h-40 w-auto rounded-2xl'
+              unoptimized
+            />
+          </div>
+        )}
         <h1 className='text-2xl font-bold tracking-tight text-white'>
           {t.nav.appTitle}
         </h1>
@@ -141,7 +152,10 @@ export default function LoginPage() {
               <Button
                 type='submit'
                 className='w-full py-5'
-                style={{ backgroundColor: "var(--brand-orange)", color: "#fff" }}
+                style={{
+                  backgroundColor: "var(--brand-orange)",
+                  color: "#fff",
+                }}
                 disabled={isLoading}
               >
                 {isLoading ? t.auth.sendingCode : t.auth.sendCode}
@@ -162,9 +176,7 @@ export default function LoginPage() {
               {t.auth.back}
             </button>
             <CardTitle className='text-lg'>{t.auth.newUserTitle}</CardTitle>
-            <CardDescription>
-              {t.auth.newUserDesc}
-            </CardDescription>
+            <CardDescription>{t.auth.newUserDesc}</CardDescription>
           </CardHeader>
           <CardContent className='space-y-4'>
             <form onSubmit={handleSignUp} className='space-y-4'>
@@ -181,13 +193,19 @@ export default function LoginPage() {
                 />
               </div>
               <p className='text-xs text-muted-foreground'>
-                {t.auth.email}: <span className='font-medium text-foreground'>{pendingEmail}</span>
+                {t.auth.email}:{" "}
+                <span className='font-medium text-foreground'>
+                  {pendingEmail}
+                </span>
               </p>
               {error && <p className='text-sm text-destructive'>{error}</p>}
               <Button
                 type='submit'
                 className='w-full py-5'
-                style={{ backgroundColor: "var(--brand-orange)", color: "#fff" }}
+                style={{
+                  backgroundColor: "var(--brand-orange)",
+                  color: "#fff",
+                }}
                 disabled={isLoading}
               >
                 {isLoading ? t.auth.creatingAccount : t.auth.createAccount}
@@ -210,12 +228,17 @@ export default function LoginPage() {
             <CardTitle className='text-lg'>{t.auth.checkEmail}</CardTitle>
             <CardDescription>
               {t.auth.codeSentTo}{" "}
-              <span className='font-medium text-foreground'>{pendingEmail}</span>
+              <span className='font-medium text-foreground'>
+                {pendingEmail}
+              </span>
             </CardDescription>
           </CardHeader>
           <CardContent className='space-y-6'>
             <form
-              onSubmit={(e) => { e.preventDefault(); handleVerify() }}
+              onSubmit={(e) => {
+                e.preventDefault()
+                handleVerify()
+              }}
               className='space-y-6'
             >
               <div className='flex justify-center'>
@@ -242,7 +265,10 @@ export default function LoginPage() {
               <Button
                 type='submit'
                 className='w-full'
-                style={{ backgroundColor: "var(--brand-orange)", color: "#fff" }}
+                style={{
+                  backgroundColor: "var(--brand-orange)",
+                  color: "#fff",
+                }}
                 disabled={otp.length < 6 || isLoading}
               >
                 {isLoading ? t.auth.verifying : t.auth.verify}

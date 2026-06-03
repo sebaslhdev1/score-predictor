@@ -2,7 +2,10 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
-    remotePatterns: [{ hostname: "flagcdn.com" }],
+    remotePatterns: [
+      { hostname: "flagcdn.com" },
+      { hostname: "vfoeivgkrzraeojqlixh.supabase.co" },
+    ],
   },
   async rewrites() {
     return [

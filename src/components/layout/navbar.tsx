@@ -1,23 +1,23 @@
 "use client"
 
-import { useEffect, useState, useSyncExternalStore } from "react"
+import { LanguageSwitcher } from "@/components/layout/language-switcher"
+import { Button } from "@/components/ui/button"
+import { useLocale } from "@/i18n/provider"
+import type { Locale } from "@/i18n/types"
+import { useT } from "@/i18n/use-t"
+import { getUserName } from "@/lib/session"
+import { cn } from "@/lib/utils"
+import { logout } from "@/services/auth"
 import { BarChart2, Globe, LogOut, Trophy, User, Users } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { useParams, usePathname, useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { LanguageSwitcher } from "@/components/layout/language-switcher"
-import { useLocale } from "@/i18n/provider"
-import { useT } from "@/i18n/use-t"
-import type { Locale } from "@/i18n/types"
-import { cn } from "@/lib/utils"
-import { logout } from "@/services/auth"
-import { getUserName } from "@/lib/session"
+import { useEffect, useState, useSyncExternalStore } from "react"
 
 const tournamentNavItems = [
-  { segment: "predictions",  labelKey: "predictions"  as const, icon: Trophy    },
-  { segment: "scoreboard",   labelKey: "scoreboard"   as const, icon: BarChart2 },
-  { segment: "participants", labelKey: "participants" as const, icon: Users     },
+  { segment: "predictions", labelKey: "predictions" as const, icon: Trophy },
+  { segment: "scoreboard", labelKey: "scoreboard" as const, icon: BarChart2 },
+  { segment: "participants", labelKey: "participants" as const, icon: Users },
 ]
 
 export function Navbar() {
@@ -63,31 +63,40 @@ export function Navbar() {
 
   return (
     <header
-      className="sticky top-0 z-50 shadow-md"
-      style={{ backgroundColor: "var(--brand-dark)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+      className='sticky top-0 z-50 shadow-md'
+      style={{
+        backgroundColor: "var(--brand-dark)",
+        borderBottom: "1px solid rgba(255,255,255,0.06)",
+      }}
     >
-      <div className="flex h-16 w-full items-center gap-4 px-6">
+      <div className='flex h-16 w-full items-center gap-4 px-6'>
         {/* Logo */}
-        <Link href="/tournaments" className="flex items-center gap-3">
+        <Link href='/tournaments' className='flex items-center gap-3'>
           {logoUrl ? (
             <Image
               src={logoUrl}
-              alt="Score Predictor logo"
-              width={36}
-              height={36}
-              className="rounded-xl"
+              alt='Score Predictor logo'
+              width={48}
+              height={48}
+              className='h-12 w-fit'
+              unoptimized
             />
           ) : (
             <div
-              className="flex h-9 w-9 items-center justify-center rounded-xl"
+              className='flex h-9 w-9 items-center justify-center rounded-xl'
               style={{ backgroundColor: "var(--brand-orange)" }}
             >
-              <Trophy className="h-5 w-5 text-white" />
+              <Trophy className='h-5 w-5 text-white' />
             </div>
           )}
-          <div className="flex flex-col leading-none">
-            <span className="text-sm font-bold tracking-tight text-white">{t.nav.appTitle}</span>
-            <span className="text-[10px] tracking-wide" style={{ color: "var(--brand-muted)" }}>
+          <div className='flex flex-col leading-none'>
+            <span className='text-sm font-bold tracking-tight text-white'>
+              {t.nav.appTitle}
+            </span>
+            <span
+              className='text-[10px] tracking-wide'
+              style={{ color: "var(--brand-muted)" }}
+            >
               {t.nav.appSubtitle}
             </span>
           </div>
@@ -95,7 +104,7 @@ export function Navbar() {
 
         {/* Tournament nav links — desktop only */}
         {tournamentId && (
-          <nav className="hidden md:flex items-center gap-1 flex-1">
+          <nav className='hidden md:flex items-center gap-1 flex-1'>
             {tournamentNavItems.map(({ segment, labelKey, icon: Icon }) => {
               const href = `/tournaments/${tournamentId}/${segment}`
               const isActive = pathname === href
@@ -110,7 +119,7 @@ export function Navbar() {
                       : "text-white/50 hover:text-white hover:bg-white/5",
                   )}
                 >
-                  <Icon className="h-4 w-4" />
+                  <Icon className='h-4 w-4' />
                   {t.nav[labelKey]}
                 </Link>
               )
@@ -119,16 +128,19 @@ export function Navbar() {
         )}
 
         {/* Right side */}
-        <div className="flex items-center gap-1 -mr-2 ml-auto">
+        <div className='flex items-center gap-1 -mr-2 ml-auto'>
           {/* Greeting */}
           {userName && (
-            <span className="hidden sm:flex items-center gap-1.5 text-sm pr-1" style={{ color: "rgba(255,255,255,0.7)" }}>
+            <span
+              className='hidden sm:flex items-center gap-1.5 text-sm pr-1'
+              style={{ color: "rgba(255,255,255,0.7)" }}
+            >
               {t.nav.greeting},{" "}
-              <span className="font-semibold text-white">{userName}</span>
+              <span className='font-semibold text-white'>{userName}</span>
             </span>
           )}
 
-          <div className="hidden md:block">
+          <div className='hidden md:block'>
             <LanguageSwitcher
               open={isLanguageOpen}
               onOpenChange={(o) => setOpenMenu(o ? "language" : null)}
@@ -136,47 +148,73 @@ export function Navbar() {
           </div>
 
           {/* User dropdown */}
-          <div className="relative">
+          <div className='relative'>
             <Button
-              variant="ghost"
-              size="icon"
-              className="rounded-full text-white hover:bg-white/10"
-              onClick={() => setOpenMenu((prev) => (prev === "user" ? null : "user"))}
+              variant='ghost'
+              size='icon'
+              className='rounded-full text-white hover:bg-white/10'
+              onClick={() =>
+                setOpenMenu((prev) => (prev === "user" ? null : "user"))
+              }
             >
-              <User className="h-5 w-5" />
+              <User className='h-5 w-5' />
             </Button>
 
             {openMenu === "user" && (
               <>
-                <div className="fixed inset-0" onClick={() => setOpenMenu(null)} />
                 <div
-                  className="absolute right-0 top-full z-20 mt-2 w-44 overflow-hidden rounded-xl bg-white shadow-lg"
-                  style={{ border: "1px solid color-mix(in srgb, var(--brand-dark) 10%, transparent)" }}
+                  className='fixed inset-0'
+                  onClick={() => setOpenMenu(null)}
+                />
+                <div
+                  className='absolute right-0 top-full z-20 mt-2 w-44 overflow-hidden rounded-xl bg-white shadow-lg'
+                  style={{
+                    border:
+                      "1px solid color-mix(in srgb, var(--brand-dark) 10%, transparent)",
+                  }}
                 >
                   {userName && (
                     <div
-                      className="border-b px-4 py-2.5"
-                      style={{ borderColor: "color-mix(in srgb, var(--brand-dark) 8%, transparent)" }}
+                      className='border-b px-4 py-2.5'
+                      style={{
+                        borderColor:
+                          "color-mix(in srgb, var(--brand-dark) 8%, transparent)",
+                      }}
                     >
-                      <p className="truncate text-sm font-semibold" style={{ color: "var(--brand-dark)" }}>
+                      <p
+                        className='truncate text-sm font-semibold'
+                        style={{ color: "var(--brand-dark)" }}
+                      >
                         {userName}
                       </p>
                     </div>
                   )}
-                  <div className="block md:hidden border-b" style={{ borderColor: "color-mix(in srgb, var(--brand-dark) 8%, transparent)" }}>
-                    <div className="flex items-center gap-1.5 px-4 pt-2.5 pb-1 text-xs text-muted-foreground">
-                      <Globe className="h-3.5 w-3.5" />
+                  <div
+                    className='block md:hidden border-b'
+                    style={{
+                      borderColor:
+                        "color-mix(in srgb, var(--brand-dark) 8%, transparent)",
+                    }}
+                  >
+                    <div className='flex items-center gap-1.5 px-4 pt-2.5 pb-1 text-xs text-muted-foreground'>
+                      <Globe className='h-3.5 w-3.5' />
                       {t.nav.language}
                     </div>
-                    <div className="flex gap-2 px-4 pb-2.5">
+                    <div className='flex gap-2 px-4 pb-2.5'>
                       {(["en", "es"] as Locale[]).map((l) => (
                         <button
                           key={l}
-                          onClick={() => { setLocale(l); setOpenMenu(null) }}
-                          className="flex-1 rounded-lg py-1.5 text-sm transition-colors hover:bg-black/5"
+                          onClick={() => {
+                            setLocale(l)
+                            setOpenMenu(null)
+                          }}
+                          className='flex-1 rounded-lg py-1.5 text-sm transition-colors hover:bg-black/5'
                           style={{
                             fontWeight: locale === l ? 700 : 400,
-                            color: locale === l ? "var(--brand-orange)" : "var(--brand-dark)",
+                            color:
+                              locale === l
+                                ? "var(--brand-orange)"
+                                : "var(--brand-dark)",
                           }}
                         >
                           {l === "en" ? "English" : "Español"}
@@ -186,10 +224,10 @@ export function Navbar() {
                   </div>
                   <button
                     onClick={handleLogout}
-                    className="flex w-full items-center gap-2.5 px-4 py-3 text-sm transition-colors hover:bg-black/5"
+                    className='flex w-full items-center gap-2.5 px-4 py-3 text-sm transition-colors hover:bg-black/5'
                     style={{ color: "var(--brand-dark)" }}
                   >
-                    <LogOut className="h-4 w-4" />
+                    <LogOut className='h-4 w-4' />
                     {t.nav.logOut}
                   </button>
                 </div>
