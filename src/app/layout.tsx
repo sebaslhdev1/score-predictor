@@ -32,7 +32,7 @@ export default function RootLayout({
     >
       <body className='min-h-full flex flex-col'>
         <LocaleProvider>{children}</LocaleProvider>
-        <Toaster position='bottom-center' richColors />
+        <Toaster position='bottom-center' richColors mobileOffset={80} />
       </body>
     </html>
   )
