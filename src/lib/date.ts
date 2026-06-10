@@ -3,8 +3,7 @@
  * Accepts "YYYY-MM-DDTHH:mm:ss" (no suffix) or any ISO string.
  */
 export function utcToLocal(utcDateStr: string): Date {
-  const normalized = utcDateStr.endsWith("Z") ? utcDateStr : utcDateStr + "Z"
-  return new Date(normalized)
+  return new Date(utcDateStr)
 }
 
 /**

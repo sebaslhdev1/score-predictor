@@ -558,7 +558,7 @@ export default function PredictionsPage() {
                 className='mb-3 text-xs font-bold uppercase tracking-widest'
                 style={{ color: "var(--brand-orange)" }}
               >
-                {formatMatchDate(date, locale)}
+                {formatMatchDate(matchesByDate[date][0].due_date, locale)}
               </h2>
               <div className='space-y-3'>
                 {matchesByDate[date].map((match) => (
