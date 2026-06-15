@@ -136,12 +136,24 @@ export const MatchCard = memo(function MatchCard({
     effectivePrediction === "tie-away"
 
   const hasWinner = match.winner != null
-  const normalizedWinner = match.winner?.toLowerCase()
+  const rawWinner = match.winner ?? ""
+  // Server may encode knockout tie results as "tie-TeamName" in the winner field
+  const isTieWinnerFormat = rawWinner.toLowerCase().startsWith("tie-")
+  // Strip the "tie-" prefix to get the actual winning team name for comparisons
+  const actualWinner = isTieWinnerFormat ? rawWinner.slice(4) : rawWinner
+  const normalizedWinner = actualWinner.toLowerCase()
   const normalizedScore = match.score?.toLowerCase()
-  // score like "tie-colombia" means the match went to extra time before a team won
-  const isTieScore = normalizedScore?.startsWith("tie-") ?? false
+  // isTieScore: match went to extra time/penalties before a team won.
+  const isTieScore =
+    isTieWinnerFormat ||
+    (normalizedScore?.startsWith("tie-") ?? false) ||
+    (hasWinner &&
+      rawWinner.toLowerCase() !== "tie" &&
+      match.local_score != null &&
+      match.away_score != null &&
+      match.local_score === match.away_score)
   const winnerKey: PredictionValue =
-    normalizedWinner === "tie"
+    rawWinner.toLowerCase() === "tie"
       ? "tie"
       : normalizedWinner === match.local_team.toLowerCase()
         ? isTieScore
@@ -170,11 +182,11 @@ export const MatchCard = memo(function MatchCard({
         : null
     : null
   const winnerDisplay =
-    normalizedWinner === "tie"
+    rawWinner.toLowerCase() === "tie"
       ? tieLabel
       : isTieScore
-        ? `${tieLabel} – ${match.winner}`
-        : (match.winner ?? "")
+        ? `${tieLabel} – ${actualWinner}`
+        : actualWinner
 
   function handlePredict(value: NonNullable<PredictionValue>) {
     if (effectiveLocked) return
