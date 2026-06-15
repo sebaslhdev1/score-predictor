@@ -13,6 +13,7 @@ interface TournamentByIdResponse {
   id: string
   name: string
   available_predictions: Match[]
+  is_admin: boolean
 }
 
 export async function getClosedMatches(tournamentId: string): Promise<Match[]> {
@@ -24,14 +25,14 @@ export async function getClosedMatches(tournamentId: string): Promise<Match[]> {
 
 export async function getTournamentById(
   tournamentId: string,
-): Promise<{ name: string; matches: Match[] }> {
+): Promise<{ name: string; matches: Match[]; isAdmin: boolean }> {
   const { data } = await api.get<TournamentByIdResponse>(
     "/get_tournament_by_id",
     {
       params: { tournament_id: tournamentId },
     },
   )
-  return { name: data.name, matches: data.available_predictions }
+  return { name: data.name, matches: data.available_predictions, isAdmin: data.is_admin }
 }
 
 export async function getQuestions(tournamentId: string): Promise<Question[]> {
@@ -64,6 +65,20 @@ export function scoreToPrediction(match: Match): PredictionValue {
   if (lower === match.local_team.toLowerCase()) return "local"
   if (lower === match.away_team.toLowerCase()) return "away"
   return null
+}
+
+export async function recordMatchResult(
+  matchId: string,
+  localScore: number,
+  awayScore: number,
+  winner?: string,
+): Promise<void> {
+  await api.post("/record_match_result", {
+    match_id: matchId,
+    local_score: localScore,
+    away_score: awayScore,
+    ...(winner !== undefined ? { winner } : {}),
+  })
 }
 
 export function isMatchLocked(dueDateStr: string): boolean {

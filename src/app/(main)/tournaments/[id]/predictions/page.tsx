@@ -72,6 +72,21 @@ export default function PredictionsPage() {
   const [questions, setQuestions] = useState<Question[]>([])
   const [questionPicks, setQuestionPicks] = useState<Record<string, QuestionOption | null>>({})
   const [serverQuestionPicks, setServerQuestionPicks] = useState<Record<string, QuestionOption | null>>({})
+  const [isOwner, setIsOwner] = useState(false)
+
+  const handleResultRecorded = useCallback((matchId: string, localScore: number, awayScore: number, knockoutWinner?: string) => {
+    const applyResult = (m: Match): Match => {
+      if (m.match_id !== matchId) return m
+      const winner = localScore > awayScore
+        ? m.local_team
+        : awayScore > localScore
+          ? m.away_team
+          : knockoutWinner ?? "tie"
+      return { ...m, winner, local_score: localScore, away_score: awayScore }
+    }
+    setMatches((prev) => prev.map(applyResult))
+    setClosedMatches((prev) => prev.map(applyResult))
+  }, [])
 
   function handleToggleClosed() {
     setClosedOpen((prev) => !prev)
@@ -89,8 +104,9 @@ export default function PredictionsPage() {
 
   useEffect(() => {
     Promise.all([getTournamentById(tournamentId), getQuestions(tournamentId).catch(() => [])])
-      .then(([{ name, matches: data }, qs]) => {
+      .then(([{ name, matches: data, isAdmin }, qs]) => {
         setTournamentName(name)
+        setIsOwner(isAdmin)
         setMatches(data)
         setQuestions(qs)
 
@@ -496,6 +512,8 @@ export default function PredictionsPage() {
                           prediction={pick}
                           serverPrediction={pick}
                           tieLabel={t.predictions.tie}
+                          isOwner={isOwner}
+                          onResultRecorded={handleResultRecorded}
                           locked
                           isPersisted={match.score !== null}
                           isClearing={false}
@@ -571,8 +589,10 @@ export default function PredictionsPage() {
                     locked={isMatchLocked(match.due_date) || isSubmitting}
                     isPersisted={persistedMatchIds.has(match.match_id)}
                     isClearing={clearingMatchId === match.match_id}
+                    isOwner={isOwner}
                     onPredict={handlePredict}
                     onClear={handleClearMatch}
+                    onResultRecorded={handleResultRecorded}
                   />
                 ))}
               </div>

@@ -72,6 +72,10 @@ export interface Translation {
     championSaved: string
     championChange: string
     championNoResults: string
+    saveResult: string
+    savingResult: string
+    cancelResult: string
+    resultSaved: string
   }
   scoreboard: {
     title: string

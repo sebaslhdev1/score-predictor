@@ -11,6 +11,8 @@ export interface Match {
   away_team_icon_code: string | null
   score: string | null
   winner: string | null
+  local_score: number | null
+  away_score: number | null
   points_earned: number | null
 }
 
