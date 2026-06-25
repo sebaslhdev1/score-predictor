@@ -286,7 +286,7 @@ export const MatchCard = memo(function MatchCard({
                 )}
               </button>
             )}
-            {hasWinner ? (
+            {hasWinner && !editingResult ? (
               <div
                 className='flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold'
                 style={{
@@ -323,6 +323,7 @@ export const MatchCard = memo(function MatchCard({
               </div>
             ) : null}
             {hasWinner &&
+              !editingResult &&
               match.points_earned != null &&
               match.points_earned > 0 && (
                 <span
@@ -332,9 +333,16 @@ export const MatchCard = memo(function MatchCard({
                   +{match.points_earned}
                 </span>
               )}
-            {!hasWinner && effectiveLocked && isOwner && !editingResult && (
+            {effectiveLocked && isOwner && !editingResult && (
               <button
-                onClick={() => setEditingResult(true)}
+                onClick={() => {
+                  if (match.local_score != null) setLocalScoreInput(String(match.local_score))
+                  if (match.away_score != null) setAwayScoreInput(String(match.away_score))
+                  if (isTieScore && actualWinner && actualWinner.toLowerCase() !== "tie") {
+                    setKnockoutWinner(actualWinner)
+                  }
+                  setEditingResult(true)
+                }}
                 className='rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground'
               >
                 <Pencil className='h-3.5 w-3.5' />

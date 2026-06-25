@@ -82,7 +82,7 @@ export default function PredictionsPage() {
         : awayScore > localScore
           ? m.away_team
           : knockoutWinner ?? "tie"
-      return { ...m, winner, local_score: localScore, away_score: awayScore }
+      return { ...m, winner, local_score: localScore, away_score: awayScore, points_earned: null }
     }
     setMatches((prev) => prev.map(applyResult))
     setClosedMatches((prev) => prev.map(applyResult))
