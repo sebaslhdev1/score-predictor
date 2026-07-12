@@ -164,8 +164,9 @@ export const MatchCard = memo(function MatchCard({
             : "away"
           : null
   const hasPrediction = effectivePrediction != null
+  const isHalfPoint = match.points_earned === 0.5
   const isCorrect =
-    hasWinner && hasPrediction && effectivePrediction === winnerKey
+    hasWinner && hasPrediction && effectivePrediction === winnerKey && !isHalfPoint
   const isPartiallyCorrect =
     !isCorrect &&
     hasWinner &&
@@ -291,12 +292,12 @@ export const MatchCard = memo(function MatchCard({
                 style={{
                   backgroundColor: isCorrect
                     ? "color-mix(in srgb, var(--brand-green) 12%, transparent)"
-                    : isPartiallyCorrect || !hasPrediction
+                    : isPartiallyCorrect || isHalfPoint || !hasPrediction
                       ? "color-mix(in srgb, var(--brand-dark) 8%, transparent)"
                       : "color-mix(in srgb, var(--destructive) 10%, transparent)",
                   color: isCorrect
                     ? "var(--brand-green)"
-                    : isPartiallyCorrect || !hasPrediction
+                    : isPartiallyCorrect || isHalfPoint || !hasPrediction
                       ? "var(--muted-foreground)"
                       : "var(--destructive)",
                 }}
@@ -314,6 +315,7 @@ export const MatchCard = memo(function MatchCard({
                 <span>{winnerDisplay}</span>
                 {hasPrediction &&
                   !isPartiallyCorrect &&
+                  !isHalfPoint &&
                   (isCorrect ? (
                     <Check className='h-3 w-3' />
                   ) : (
@@ -327,7 +329,7 @@ export const MatchCard = memo(function MatchCard({
               match.points_earned > 0 && (
                 <span
                   className='text-xs font-bold'
-                  style={{ color: "var(--brand-green)" }}
+                  style={{ color: isHalfPoint ? "var(--muted-foreground)" : "var(--brand-green)" }}
                 >
                   +{match.points_earned}
                 </span>
