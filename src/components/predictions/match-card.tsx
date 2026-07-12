@@ -142,11 +142,10 @@ export const MatchCard = memo(function MatchCard({
   // Strip the "tie-" prefix to get the actual winning team name for comparisons
   const actualWinner = isTieWinnerFormat ? rawWinner.slice(4) : rawWinner
   const normalizedWinner = actualWinner.toLowerCase()
-  const normalizedScore = match.score?.toLowerCase()
-  // isTieScore: match went to extra time/penalties before a team won.
+  // isTieScore: the actual match went to extra time/penalties before a team won.
+  // Based only on the real result — never on match.score (the user's prediction).
   const isTieScore =
     isTieWinnerFormat ||
-    (normalizedScore?.startsWith("tie-") ?? false) ||
     (hasWinner &&
       rawWinner.toLowerCase() !== "tie" &&
       match.local_score != null &&
